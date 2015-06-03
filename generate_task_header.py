@@ -2,8 +2,7 @@
 
 import os
 import re
-import sys
-from toposort import toposort, toposort_flatten
+from toposort import toposort_flatten
 import copy
 
 dtask_re = re.compile('DTASK\(\s*(\w+)\s*,(.+)\)')
@@ -26,6 +25,7 @@ def find_tasks_in_file(filename):
                 tasks[-1]['deps'].add(match.group(1))
     return tasks
 
+
 def find_tasks(dir):
     tasks = []
     for root, dirs, files in os.walk(dir):
@@ -36,6 +36,7 @@ def find_tasks(dir):
                 tasks.extend(new_tasks)
     return tasks
 
+
 def order_tasks(tasks):
     types = {}
     deps = {}
@@ -43,7 +44,9 @@ def order_tasks(tasks):
         types[task['name']] = task['type']
         deps[task['name']] = task['deps']
     deps_copy = copy.deepcopy(deps)
-    return map(lambda name: (name, types[name], deps_copy[name]), toposort_flatten(deps))
+    return map(lambda name: (name, types[name], deps_copy[name]),
+               toposort_flatten(deps))
+
 
 def generate_header(dir, header):
     tasks = order_tasks(find_tasks(dir))
@@ -53,6 +56,7 @@ def generate_header(dir, header):
     with open(header, 'w') as f:
         f.write('''#ifndef __ALL_TASKS__
 #define __ALL_TASKS__
+
 #include "dtask.h"
 
 ''')
@@ -61,12 +65,13 @@ def generate_header(dir, header):
             ids[task] = id
             id = id + 1
         f.write('\n')
-        f.write('#define ALL_TASKS { ')
+        f.write('#define ALL_TASKS { \\\n')
         for (task, type, deps) in tasks:
             mask = 0
             for d in deps:
                 mask = mask | (1 << ids[d])
-            f.write('{{ dtask_{}, "{}", 0x{:x}, {:d} }}, '.format(task, task, mask, ids[task]))
+            f.write('  {{ dtask_{}, "{}", 0x{:x}, {:d} }}, \\\n'
+                    .format(task, task, mask, ids[task]))
         f.write(' }\n\n')
         for (task, type, deps) in tasks:
             f.write('DECLARE_DTASK({}, {});\n'.format(task, type))

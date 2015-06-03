@@ -44,5 +44,7 @@ int main() {
     dtask_run(&state);
   }
 
+  printf("\n\n_____ THE END _____\n\n");
+
   return 0;
 }
