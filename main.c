@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <unistd.h>
 
 #include "dtask.h"
 
@@ -13,8 +12,7 @@ int main() {
     .enabled = 0
   };
 
-  printf("\n\nenabling OUTPUT35\n");
-  sleep(3);
+  printf("\n\n_____ enabling OUTPUT35 _____\n");
   dtask_disable_all(&state);
   dtask_enable(&state, OUTPUT35);
 
@@ -22,8 +20,7 @@ int main() {
     dtask_run(&state);
   }
 
-  printf("\n\nenabling OUTPUT57\n");
-  sleep(3);
+  printf("\n\n_____ enabling OUTPUT57 _____\n");
   dtask_disable_all(&state);
   dtask_enable(&state, OUTPUT57);
 
@@ -31,16 +28,15 @@ int main() {
     dtask_run(&state);
   }
 
-  printf("\n\nenabling OUTPUT357\n");
-  sleep(3);
+  printf("\n\n_____ enabling OUTPUT357 _____\n");
   dtask_disable_all(&state);
   dtask_enable(&state, OUTPUT357);
 
-  for(int i = 0; i < 100; i++) {
+  for(int i = 0; i < 500; i++) {
     dtask_run(&state);
   }
 
-  printf("\n\ndisabling MOD_SEVEN\n");
+  printf("\n\n_____ disabling MOD_SEVEN _____\n");
   dtask_enable(&state, OUTPUT35 | OUTPUT57);
   dtask_disable(&state, MOD_SEVEN);
   printf("enabled = 0x%x\n", state.enabled);

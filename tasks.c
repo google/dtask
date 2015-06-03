@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <assert.h>
 #include "dtask.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 #if DEBUG
 #define debugf(args...) printf(args)
@@ -11,19 +12,28 @@
 
 DTASK(output35, int) {
   const combine35_t *x = &DGET(combine35);
-  printf("%d * 3 == %d * 5 == %d\n", x->m3, x->m5, x->m3 * x->m5);
+  assert(x->m3 * 3 == x->m5 * 5);
+  debugf("\n");
+  printf("%d * 3 == %d * 5 == %d\n", x->m3, x->m5, x->m3 * 3);
+  debugf("\n");
   return true;
 }
 
 DTASK(output57, int) {
   const combine57_t *x = &DGET(combine57);
-  printf("%d * 5 == %d * 7 == %d\n", x->m5, x->m7, x->m5 * x->m7);
+  assert(x->m5 * 5 == x->m7 * 7);
+  debugf("\n");
+  printf("%d * 5 == %d * 7 == %d\n", x->m5, x->m7, x->m5 * 5);
+  debugf("\n");
   return true;
 }
 
 DTASK(output357, int) {
   const combine357_t *x = &DGET(combine357);
-  printf("%d * 3 == %d * 5 == %d * 7 == %d\n", x->m3, x->m5, x->m7, x->m3 * x->m5 * x->m7);
+  assert(x->m3 * 3 == x->m5 * 5 && x->m5 * 5 == x->m7 * 7);
+  debugf("\n");
+  printf("%d * 3 == %d * 5 == %d * 7 == %d\n", x->m3, x->m5, x->m7, x->m3 * 3);
+  debugf("\n");
   return true;
 }
 
@@ -68,7 +78,7 @@ DTASK(mod_three, int) {
   int x = DGET(count);
   if(x % 3 != 0) return false;
   mod_three = x / 3;
-  debugf("mod_three(%d)\n", x);
+  debugf("[3] ");
   return true;
 }
 
@@ -76,7 +86,7 @@ DTASK(mod_five, int) {
   int x = DGET(count);
   if(x % 5 != 0) return false;
   mod_five = x / 5;
-  debugf("mod_five(%d)\n", x);
+  debugf("[5] ");
   return true;
 }
 
@@ -84,7 +94,7 @@ DTASK(mod_seven, int) {
   int x = DGET(count);
   if(x % 7 != 0) return false;
   mod_seven = x / 7;
-  debugf("mod_seven(%d)\n", x);
+  debugf("[7] ");
   return true;
 }
 
