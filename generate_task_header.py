@@ -6,7 +6,7 @@ import sys
 from toposort import toposort, toposort_flatten
 import copy
 
-dtask_re = re.compile('DTASK\(\s*(\w+)\s*,\s*(\w+)\s*\)')
+dtask_re = re.compile('DTASK\(\s*(\w+)\s*,(.+)\)')
 dget_re = re.compile('DGET\(\s*(\w+)\s*\)')
 
 
@@ -16,15 +16,15 @@ def find_tasks_in_file(filename):
         for line in f:
             match = dtask_re.search(line)
             if match:
+                #print(match.group(0))
                 tasks.append({'name': match.group(1),
-                              'type': match.group(2),
+                              'type': match.group(2).strip(),
                               'deps': set()})
             match = dget_re.search(line)
             if match:
+                #print(match.group(0))
                 tasks[-1]['deps'].add(match.group(1))
     return tasks
-
-#print(find_tasks_in_file('tasks.c'))
 
 def find_tasks(dir):
     tasks = []
@@ -55,23 +55,21 @@ def generate_header(dir, header):
 #define __ALL_TASKS__
 #include "dtask.h"
 
-typedef enum task_id_t {
 ''')
         for (task, type, deps) in tasks:
-            f.write('  {} = {},\n'.format(task.upper(), id))
+            f.write('#define {} 0x{:x}\n'.format(task.upper(), 1 << id))
             ids[task] = id
             id = id + 1
-        f.write('  MAX_TASK_ID = {}\n'.format(id))
-        f.write('} task_id_t;\n\n')
+        f.write('\n')
         f.write('#define ALL_TASKS { ')
         for (task, type, deps) in tasks:
             mask = 0
             for d in deps:
                 mask = mask | (1 << ids[d])
-            f.write('{{ {}, "{}", 0x{:x}, {:d} }}, '.format(task, task, mask, ids[task]))
+            f.write('{{ dtask_{}, "{}", 0x{:x}, {:d} }}, '.format(task, task, mask, ids[task]))
         f.write(' }\n\n')
         for (task, type, deps) in tasks:
-            f.write('DTASK({}, {});\n'.format(task, type))
+            f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
         f.write('''
 #endif
 ''')
