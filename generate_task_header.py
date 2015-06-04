@@ -4,25 +4,29 @@ import os
 import re
 from toposort import toposort_flatten
 import copy
+import subprocess
 
-dtask_re = re.compile('DTASK\(\s*(\w+)\s*,(.+)\)')
-dget_re = re.compile('DGET\(\s*(\w+)\s*\)')
+dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,(.+)\)')
+dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
 
 
 def find_tasks_in_file(filename):
     tasks = []
-    with open(filename) as f:
-        for line in f:
+    cpp = subprocess.Popen(['cpp', '-w', filename],
+                           stdout=subprocess.PIPE)
+    lines = iter(cpp.stdout.readline, '')
+    for line in lines:
+        if line[0] != '#':
             match = dtask_re.search(line)
             if match:
                 #print(match.group(0))
                 tasks.append({'name': match.group(1),
                               'type': match.group(2).strip(),
                               'deps': set()})
-            match = dget_re.search(line)
-            if match:
-                #print(match.group(0))
-                tasks[-1]['deps'].add(match.group(1))
+            for match in dget_re.finditer(line):
+                if match:
+                    #print(match.group(0))
+                    tasks[-1]['deps'].add(match.group(1))
     return tasks
 
 
@@ -49,6 +53,11 @@ def order_tasks(tasks):
 
 
 def generate_header(dir, header):
+    #touch the header file
+    with open(header, 'w') as f:
+        os.utime(header, None)
+        f.write('#undef DTASK\n')
+        f.write('#undef DGET\n')
     tasks = order_tasks(find_tasks(dir))
     ids = {}
     id = 0
