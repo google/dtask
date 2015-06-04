@@ -17,4 +17,4 @@ all_tasks.h: $(SRC)
 
 .PHONY: clean
 clean:
-	rm -f *.o all_tasks.h test
+	rm -f *.o all_tasks.h test *.pyc
