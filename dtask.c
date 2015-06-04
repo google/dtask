@@ -48,9 +48,9 @@ void dtask_run(dtask_state_t *state) {
   dtask_id_t n = state->num_tasks;
   dtask_mask_t enabled = state->enabled;
   dtask_mask_t mask = 0;
+  dtask_mask_t id_bit = 1;
   while(n--) {
     // task can depend on itself
-    dtask_mask_t id_bit = 1U << t->id;
     dtask_mask_t new_mask = mask | id_bit;
     if((id_bit & enabled) &&
        (t->depends & new_mask) &&
@@ -58,5 +58,6 @@ void dtask_run(dtask_state_t *state) {
       mask = new_mask;
     }
     t++;
+    id_bit <<= 1;
   }
 }
