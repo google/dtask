@@ -32,12 +32,12 @@ void dtask_disable_all(dtask_state_t *state);
 
 #define DTASK(name, ...)  \
   name##_t name;          \
-  bool dtask_##name(const dtask_t *task, dtask_mask_t events)
+  bool __dtask_##name(const dtask_t *task, dtask_mask_t events)
 
 #define DECLARE_DTASK(name, type...)  \
   typedef type name##_t;             \
   extern name##_t name;              \
-  bool dtask_##name(const dtask_t *task, dtask_mask_t events)
+  bool __dtask_##name(const dtask_t *task, dtask_mask_t events)
 
 #include "all_tasks.h"
 

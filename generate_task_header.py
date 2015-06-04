@@ -67,11 +67,10 @@ def generate_header(dir, header):
         f.write('\n')
         f.write('#define ALL_TASKS { \\\n')
         for (task, type, deps) in tasks:
-            mask = 0
-            for d in deps:
-                mask = mask | (1 << ids[d])
-            f.write('  {{ dtask_{}, "{}", 0x{:x}, {:d} }}, \\\n'
-                    .format(task, task, mask, ids[task]))
+            f.write('  {{ __dtask_{}, "{}", {}, {:d} }}, \\\n'
+                    .format(task,
+                            task, ' | '.join(map(lambda x: x.upper(), deps)),
+                            ids[task]))
         f.write(' }\n\n')
         for (task, type, deps) in tasks:
             f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
