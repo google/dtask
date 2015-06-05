@@ -5,6 +5,7 @@ import re
 from toposort import toposort_flatten
 import copy
 import subprocess
+import sys
 
 dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,(.+)\)')
 dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
@@ -88,8 +89,9 @@ def show_set(s):
         map(lambda x: x.upper(), s)) if s else "0"
 
 
-def generate_header(dir, header):
+def generate_header(dir, name):
     #touch the header file
+    header = name + '.h'
     with open(header, 'w') as f:
         os.utime(header, None)
         f.write('#undef DTASK\n')
@@ -99,12 +101,12 @@ def generate_header(dir, header):
     id = 0
 
     with open(header, 'w') as f:
-        f.write('''#ifndef __ALL_TASKS__
-#define __ALL_TASKS__
+        f.write('''#ifndef __{name}__
+#define __{name}__
 
 #include "dtask.h"
 
-''')
+'''.format(name=name.upper()))
         # id masks
         for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
             f.write('#define {} 0x{:x}\n'.format(task.upper(), 1 << id))
@@ -117,14 +119,15 @@ def generate_header(dir, header):
             if not deps:
                 initial.add(task)
 
-        f.write('\n#define INITIAL ({})\n\n'.format(show_set(initial)))
+        f.write('\n#define {}_INITIAL ({})\n\n'.format(name.upper(),
+                                                       show_set(initial)))
 
         #declare tasks
         for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
             f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
 
         #dtask array
-        f.write('\nstatic const dtask_t ALL_TASKS[{}] = {{ \\\n'.format(id))
+        f.write('\nstatic const dtask_t {}[{}] = {{ \\\n'.format(name, id))
         for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
             f.write('''  {{ /* .func = */ __dtask_{}, \\
     /* .name = */ "{}", \\
@@ -145,4 +148,8 @@ def generate_header(dir, header):
 #endif
 ''')
 
-generate_header('.', 'all_tasks.h')
+def main(argv):
+    generate_header(argv[1], argv[2])
+
+if __name__ == "__main__":
+    main(sys.argv)
