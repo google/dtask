@@ -2,3 +2,4 @@
 *.o
 all_tasks.h
 test
+*.pyc
