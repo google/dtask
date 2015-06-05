@@ -11,6 +11,8 @@ int main() {
     .enabled = 0
   };
 
+  count = -1;
+
   printf("\n\n_____ enabling OUTPUT35 _____\n");
   dtask_disable_all(&state);
   dtask_enable(&state, OUTPUT35);
@@ -38,8 +40,15 @@ int main() {
   printf("\n\n_____ disabling MOD_SEVEN _____\n");
   dtask_enable(&state, OUTPUT35 | OUTPUT57);
   dtask_disable(&state, MOD_SEVEN);
-  printf("enabled = 0x%x\n", state.enabled);
   for(int i = 0; i < 100; i++) {
+    dtask_run(&state, INITIAL);
+  }
+
+  printf("\n\n_____ FIZZBUZZ _____\n");
+  dtask_disable_all(&state);
+  dtask_enable(&state, FIZZBUZZ);
+  count = 0;
+  for(int i = 0; i <= 100; i++) {
     dtask_run(&state, INITIAL);
   }
 

@@ -10,6 +10,21 @@
 #define debugf(...)
 #endif
 
+DTASK(fizzbuzz, int) {
+  int x = DGET(count);
+  (void)DGET(mod_three);
+  (void)DGET(mod_five);
+  if(DTASK_AND(MOD_THREE | MOD_FIVE)) {
+    printf("fizzbuzz\n");
+  } else if(events & MOD_THREE) {
+    printf("fizz\n");
+  } else if(events & MOD_FIVE) {
+    printf("buzz\n");
+  } else {
+    printf("%d\n", x);
+  }
+}
+
 DTASK(output35, int) {
   const combine35_t *x = &DGET(combine35);
   assert(x->m3 * 3 == x->m5 * 5);
