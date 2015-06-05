@@ -5,7 +5,7 @@
 
 void dtask_enable(dtask_state_t *state, dtask_mask_t mask) {
   dtask_mask_t enabled = state->enabled | mask;
-  dtask_id_t n = state->num_tasks;
+  const dtask_id_t n = state->num_tasks;
   const dtask_t *t = state->tasks;
 
   for(unsigned int i = 0; i < n; i++, t++) {
@@ -19,8 +19,7 @@ void dtask_enable(dtask_state_t *state, dtask_mask_t mask) {
 
 void dtask_disable(dtask_state_t *state, dtask_mask_t mask) {
   dtask_mask_t enabled = state->enabled & ~mask;
-  dtask_mask_t changed = mask & enabled;
-  dtask_id_t n = state->num_tasks;
+  const dtask_id_t n = state->num_tasks;
   const dtask_t *t = state->tasks;
 
   for(unsigned int i = 0; i < n; i++, t++) {

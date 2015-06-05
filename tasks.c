@@ -23,6 +23,7 @@ DTASK(fizzbuzz, int) {
   } else {
     printf("%d\n", x);
   }
+  return true;
 }
 
 DTASK(output35, int) {
