@@ -44,12 +44,39 @@ def find_tasks(dir):
 def order_tasks(tasks):
     types = {}
     deps = {}
+    all_deps = {}
+    all_depnts = {}
+
+    #build dictionaries
     for task in tasks:
         types[task['name']] = task['type']
         deps[task['name']] = task['deps']
-    deps_copy = copy.deepcopy(deps)
-    return map(lambda name: (name, types[name], deps_copy[name]),
-               toposort_flatten(deps))
+
+    sorted = toposort_flatten(copy.deepcopy(deps))
+
+    #calculate dependencies transitively
+    for name in sorted:
+        d = copy.deepcopy(deps[name])
+        all_deps[name] = d
+        for dep in deps[name]:
+            d |= all_deps[dep]
+        all_deps[name] = d
+
+    for name in sorted:
+        all_depnts[name] = set()
+        for d in all_deps[name]:
+            all_depnts[d].add(name)
+
+    return map(lambda name: (name, types[name],
+                             deps[name],
+                             all_deps[name],
+                             all_depnts[name]),
+               sorted)
+
+
+def show_set(s):
+    return ' | '.join(
+        map(lambda x: x.upper(), s)) if s else "0"
 
 
 def generate_header(dir, header):
@@ -69,19 +96,21 @@ def generate_header(dir, header):
 #include "dtask.h"
 
 ''')
-        for (task, type, deps) in tasks:
+        for (task, type, dds, deps, depnts) in tasks:
             f.write('#define {} 0x{:x}\n'.format(task.upper(), 1 << id))
             ids[task] = id
             id = id + 1
         f.write('\n')
         f.write('#define ALL_TASKS { \\\n')
-        for (task, type, deps) in tasks:
-            f.write('  {{ __dtask_{}, "{}", {}, {:d} }}, \\\n'
-                    .format(task,
-                            task, ' | '.join(map(lambda x: x.upper(), deps)),
+        for (task, type, dds, deps, depnts) in tasks:
+            f.write('  {{ __dtask_{}, "{}", {}, {}, {}, {:d} }}, \\\n'
+                    .format(task, task,
+                            show_set(dds),
+                            show_set(deps),
+                            show_set(depnts),
                             ids[task]))
         f.write(' }\n\n')
-        for (task, type, deps) in tasks:
+        for (task, type, dds, deps, depnts) in tasks:
             f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
         f.write('''
 #endif

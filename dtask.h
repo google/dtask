@@ -12,7 +12,7 @@ struct dtask
 {
   bool (*func)(const dtask_t *, uint32_t);
   char *name;
-  dtask_mask_t depends;
+  dtask_mask_t direct_dependencies, dependencies, dependents;
   dtask_id_t id;
 };
 
