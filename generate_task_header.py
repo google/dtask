@@ -31,17 +31,6 @@ def find_tasks_in_file(filename):
     return tasks
 
 
-def find_tasks(dir):
-    tasks = []
-    for root, dirs, files in os.walk(dir):
-        for filename in files:
-            ext = os.path.splitext(filename)[1][1:]
-            if ext == 'c' or ext == 'cpp':
-                new_tasks = find_tasks_in_file(os.path.join(root, filename))
-                tasks.extend(new_tasks)
-    return tasks
-
-
 def order_tasks(tasks):
     types = {}
     deps = {}
@@ -89,14 +78,19 @@ def show_set(s):
         map(lambda x: x.upper(), s)) if s else "0"
 
 
-def generate_header(dir, name):
+def generate_header(name, files):
     #touch the header file
     header = name + '.h'
     with open(header, 'w') as f:
         os.utime(header, None)
         f.write('#undef DTASK\n')
         f.write('#undef DGET\n')
-    tasks = order_tasks(find_tasks(dir))
+
+    tasks = []
+    for filename in sorted(files):
+        new_tasks = find_tasks_in_file(filename)
+        tasks.extend(new_tasks)
+    tasks = order_tasks(tasks)
     ids = {}
     id = 0
 
@@ -149,7 +143,7 @@ def generate_header(dir, name):
 ''')
 
 def main(argv):
-    generate_header(argv[1], argv[2])
+    generate_header(argv[1], argv[2:])
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -10,7 +10,7 @@ test: $(OBJS)
 	gcc $(OBJS) -o test
 
 all_tasks.h: $(SRC)
-	python generate_task_header.py . all_tasks
+	python generate_task_header.py all_tasks $(SRC)
 
 %.o: %.c $(HEADERS)
 	gcc -c $*.c -o $*.o $(CFLAGS)
