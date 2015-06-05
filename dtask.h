@@ -12,7 +12,7 @@ struct dtask
 {
   bool (*func)(const dtask_t *, uint32_t);
   char *name;
-  dtask_mask_t direct_dependencies, dependencies, dependents;
+  dtask_mask_t dependencies, dependents, all_dependencies, all_dependents;
   dtask_id_t id;
 };
 
@@ -23,7 +23,7 @@ typedef struct dtask_state
   dtask_mask_t enabled;
 } dtask_state_t;
 
-void dtask_run(dtask_state_t *state);
+void dtask_run(dtask_state_t *state, dtask_mask_t initial);
 void dtask_enable(dtask_state_t *state, dtask_mask_t mask);
 void dtask_disable(dtask_state_t *state, dtask_mask_t mask);
 void dtask_disable_all(dtask_state_t *state);

@@ -99,7 +99,6 @@ DTASK(mod_seven, int) {
 }
 
 DTASK(count, int) {
-  int x = DGET(count);
-  count = x + 1;
+  count++;
   return true;
 }

@@ -44,6 +44,7 @@ def find_tasks(dir):
 def order_tasks(tasks):
     types = {}
     deps = {}
+    depnts = {}
     all_deps = {}
     all_depnts = {}
 
@@ -54,6 +55,12 @@ def order_tasks(tasks):
 
     sorted = toposort_flatten(copy.deepcopy(deps))
 
+    #calculate dependents
+    for name in sorted:
+        depnts[name] = set()
+        for d in deps[name]:
+            depnts[d].add(name)
+
     #calculate dependencies transitively
     for name in sorted:
         d = copy.deepcopy(deps[name])
@@ -62,6 +69,7 @@ def order_tasks(tasks):
             d |= all_deps[dep]
         all_deps[name] = d
 
+    #calculate dependents transitively
     for name in sorted:
         all_depnts[name] = set()
         for d in all_deps[name]:
@@ -69,6 +77,7 @@ def order_tasks(tasks):
 
     return map(lambda name: (name, types[name],
                              deps[name],
+                             depnts[name],
                              all_deps[name],
                              all_depnts[name]),
                sorted)
@@ -96,22 +105,42 @@ def generate_header(dir, header):
 #include "dtask.h"
 
 ''')
-        for (task, type, dds, deps, depnts) in tasks:
+        # id masks
+        for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
             f.write('#define {} 0x{:x}\n'.format(task.upper(), 1 << id))
             ids[task] = id
             id = id + 1
-        f.write('\n')
-        f.write('#define ALL_TASKS { \\\n')
-        for (task, type, dds, deps, depnts) in tasks:
-            f.write('  {{ __dtask_{}, "{}", {}, {}, {}, {:d} }}, \\\n'
+
+        #initial
+        initial = set()
+        for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
+            if not deps:
+                initial.add(task)
+
+        f.write('\n#define INITIAL ({})\n\n'.format(show_set(initial)))
+
+        #declare tasks
+        for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
+            f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
+
+        #dtask array
+        f.write('\nstatic const dtask_t ALL_TASKS[{}] = {{ \\\n'.format(id))
+        for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
+            f.write('''  {{ /* .func = */ __dtask_{}, \\
+    /* .name = */ "{}", \\
+    /* .dependencies = */ {}, \\
+    /* .dependents = */ {}, \\
+    /* .all_dependencies = */ {}, \\
+    /* .all_dependents = */ {}, \\
+    /* .id = */ {:d} }}, \\\n'''
                     .format(task, task,
-                            show_set(dds),
                             show_set(deps),
                             show_set(depnts),
+                            show_set(all_deps),
+                            show_set(all_depnts),
                             ids[task]))
-        f.write(' }\n\n')
-        for (task, type, dds, deps, depnts) in tasks:
-            f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
+        f.write(' };\n')
+
         f.write('''
 #endif
 ''')

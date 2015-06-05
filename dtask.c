@@ -10,7 +10,7 @@ void dtask_enable(dtask_state_t *state, dtask_mask_t mask) {
 
   for(unsigned int i = 0; i < n; i++, t++) {
     if((1U << i) & mask) {
-      enabled |= t->dependencies;
+      enabled |= t->all_dependencies;
     }
   }
 
@@ -25,7 +25,7 @@ void dtask_disable(dtask_state_t *state, dtask_mask_t mask) {
 
   for(unsigned int i = 0; i < n; i++, t++) {
     if((1U << i) & mask) {
-      enabled &= ~t->dependents;
+      enabled &= ~t->all_dependents;
     }
   }
 
@@ -36,21 +36,22 @@ void dtask_disable_all(dtask_state_t *state) {
   state->enabled = 0;
 }
 
-void dtask_run(dtask_state_t *state) {
+void dtask_run(dtask_state_t *state, dtask_mask_t initial) {
   const dtask_t *t = state->tasks;
-  dtask_id_t n = state->num_tasks;
-  dtask_mask_t enabled = state->enabled;
-  dtask_mask_t mask = 0;
-  dtask_mask_t id_bit = 1;
-  while(n--) {
-    // task can depend on itself
-    dtask_mask_t new_mask = mask | id_bit;
-    if((id_bit & enabled) &&
-       (t->direct_dependencies & new_mask) &&
-       t->func(t, new_mask)) {
-      mask = new_mask;
+  dtask_mask_t
+    enabled = state->enabled,
+    scheduled = initial & enabled,
+    events = 0,
+    id_bit = 1;
+
+  while(scheduled) {
+    if((id_bit & scheduled) &&
+       t->func(t, events)) {
+      events |= id_bit;
+      scheduled |= t->dependents & enabled;
     }
-    t++;
+    scheduled &= ~id_bit;
     id_bit <<= 1;
+    t++;
   }
 }
