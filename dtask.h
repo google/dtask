@@ -20,7 +20,7 @@ typedef struct dtask_state
 {
   const dtask_t *tasks;
   const dtask_id_t num_tasks;
-  dtask_mask_t enabled;
+  dtask_mask_t enabled, enabled_dependencies;
 } dtask_state_t;
 
 void dtask_run(dtask_state_t *state, dtask_mask_t initial);

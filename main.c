@@ -8,7 +8,8 @@ int main() {
   dtask_state_t state = {
     .tasks = all_tasks,
     .num_tasks = LENGTH(all_tasks),
-    .enabled = 0
+    .enabled = 0,
+    .enabled_dependencies = 0
   };
 
   count = -1;
@@ -40,6 +41,13 @@ int main() {
   printf("\n\n_____ disabling MOD_SEVEN _____\n");
   dtask_enable(&state, OUTPUT35 | OUTPUT57);
   dtask_disable(&state, MOD_SEVEN);
+  for(int i = 0; i < 100; i++) {
+    dtask_run(&state, ALL_TASKS_INITIAL);
+  }
+
+  printf("\n\n_____ disabling OUTPUT35 _____\n");
+  dtask_enable(&state, OUTPUT35 | OUTPUT57);
+  dtask_disable(&state, OUTPUT35);
   for(int i = 0; i < 100; i++) {
     dtask_run(&state, ALL_TASKS_INITIAL);
   }
