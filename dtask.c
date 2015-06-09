@@ -3,31 +3,33 @@
 
 #include "dtask.h"
 
-void dtask_enable(dtask_state_t *state, dtask_mask_t mask) {
-  dtask_mask_t enabled_dependencies = state->enabled |= mask;
-  const dtask_id_t n = state->num_tasks;
+void dtask_enable(dtask_state_t *state, dtask_set_t set) {
+  dtask_set_t enabled_dependencies = state->enabled |= set;
+  dtask_id_t n = state->num_tasks;
   const dtask_t *t = state->tasks;
 
   // enable dependencies
-  for(unsigned int i = 0; i < n; i++, t++) {
-    if((1U << i) & mask) {
+  while(n--) {
+    if((1U << n) & set) {
       enabled_dependencies |= t->all_dependencies;
     }
+    t++;
   }
 
   state->enabled_dependencies = enabled_dependencies;
 }
 
-void dtask_disable(dtask_state_t *state, dtask_mask_t mask) {
-  dtask_mask_t enabled = state->enabled & ~mask;
-  const dtask_id_t n = state->num_tasks;
+void dtask_disable(dtask_state_t *state, dtask_set_t set) {
+  dtask_set_t enabled = state->enabled & ~set;
+  dtask_id_t n = state->num_tasks;
   const dtask_t *t = state->tasks;
 
   // disable dependents
-  for(unsigned int i = 0; i < n; i++, t++) {
-    if((1U << i) & mask) {
+  while(n--) {
+    if((1U << n) & set) {
       enabled &= ~t->all_dependents;
     }
+    t++;
   }
 
   state->enabled = enabled;
@@ -42,13 +44,18 @@ void dtask_disable_all(dtask_state_t *state) {
   state->enabled_dependencies = 0;
 }
 
-void dtask_run(dtask_state_t *state, dtask_mask_t initial) {
+static inline
+dtask_id_t dtask_set_find_first(dtask_set_t set) {
+  return sizeof(set) * 8 - (__builtin_clz(set) + 1);
+}
+
+void dtask_run(dtask_state_t *state, dtask_set_t initial) {
   const dtask_t *t = state->tasks;
-  dtask_mask_t
+  dtask_set_t
     enabled = state->enabled_dependencies,
     scheduled = initial & enabled,
     events = 0,
-    id_bit = 1;
+    id_bit = 1U << dtask_set_find_first(initial);
 
   while(scheduled) {
     if((id_bit & scheduled) &&
@@ -57,7 +64,7 @@ void dtask_run(dtask_state_t *state, dtask_mask_t initial) {
       scheduled |= t->dependents & enabled;
     }
     scheduled &= ~id_bit;
-    id_bit <<= 1;
+    id_bit >>= 1;
     t++;
   }
 }

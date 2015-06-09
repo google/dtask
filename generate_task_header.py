@@ -7,7 +7,7 @@ import copy
 import subprocess
 import sys
 
-dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,(.+)\)')
+dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,\s*(.+)\s*\)')
 dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
 
 
@@ -22,7 +22,7 @@ def find_tasks_in_file(filename):
             if match:
                 #print(match.group(0))
                 tasks.append({'name': match.group(1),
-                              'type': match.group(2).strip(),
+                              'type': match.group(2),
                               'deps': set()})
             for match in dget_re.finditer(line):
                 if match:
@@ -102,14 +102,14 @@ def generate_header(name, files):
 
 '''.format(name=name.upper()))
         # id masks
-        for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
+        for (task, _, _, _, _, _) in reversed(tasks):
             f.write('#define {} 0x{:x}\n'.format(task.upper(), 1 << id))
             ids[task] = id
             id = id + 1
 
         #initial
         initial = set()
-        for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
+        for (task, _, deps, _, _, _) in tasks:
             if not deps:
                 initial.add(task)
 
