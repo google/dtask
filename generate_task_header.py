@@ -7,6 +7,8 @@ import copy
 import subprocess
 import sys
 
+BITS_IN_DTASK_SET_T = 32
+
 dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,\s*(.+)\s*\)')
 dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
 
@@ -102,8 +104,9 @@ def generate_header(name, files):
 
 '''.format(name=name.upper()))
         # id masks
-        for (task, _, _, _, _, _) in reversed(tasks):
-            f.write('#define {} 0x{:x}\n'.format(task.upper(), 1 << id))
+        for (task, _, _, _, _, _) in tasks:
+            f.write('#define {} 0x{:x}\n'.format(task.upper(),
+                                                 1 << (BITS_IN_DTASK_SET_T - id - 1)))
             ids[task] = id
             id = id + 1
 
