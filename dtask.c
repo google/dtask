@@ -3,17 +3,21 @@
 
 #include "dtask.h"
 
+static inline
+dtask_id_t dtask_set_find_first(dtask_set_t set) {
+  return sizeof(set) * 8 - (__builtin_clz(set) + 1);
+}
+
 void dtask_enable(dtask_state_t *state, dtask_set_t set) {
   dtask_set_t enabled_dependencies = state->enabled |= set;
-  dtask_id_t n = state->num_tasks;
-  const dtask_t *t = state->tasks;
+  const dtask_t *tasks = state->tasks;
+  const dtask_id_t last = state->num_tasks - 1;
 
   // enable dependencies
-  while(n--) {
-    if((1U << n) & set) {
-      enabled_dependencies |= t->all_dependencies;
-    }
-    t++;
+  while(set) {
+    dtask_id_t n = dtask_set_find_first(set);
+    enabled_dependencies |= tasks[last - n].all_dependencies;
+    set &= ~(1U << n);
   }
 
   state->enabled_dependencies = enabled_dependencies;
@@ -21,15 +25,14 @@ void dtask_enable(dtask_state_t *state, dtask_set_t set) {
 
 void dtask_disable(dtask_state_t *state, dtask_set_t set) {
   dtask_set_t enabled = state->enabled & ~set;
-  dtask_id_t n = state->num_tasks;
-  const dtask_t *t = state->tasks;
+  const dtask_t *tasks = state->tasks;
+  const dtask_id_t last = state->num_tasks - 1;
 
   // disable dependents
-  while(n--) {
-    if((1U << n) & set) {
-      enabled &= ~t->all_dependents;
-    }
-    t++;
+  while(set) {
+    dtask_id_t n = dtask_set_find_first(set);
+    enabled &= ~tasks[last - n].all_dependents;
+    set &= ~(1U << n);
   }
 
   state->enabled = enabled;
@@ -44,27 +47,22 @@ void dtask_disable_all(dtask_state_t *state) {
   state->enabled_dependencies = 0;
 }
 
-static inline
-dtask_id_t dtask_set_find_first(dtask_set_t set) {
-  return sizeof(set) * 8 - (__builtin_clz(set) + 1);
-}
-
-void dtask_run(dtask_state_t *state, dtask_set_t initial) {
-  const dtask_t *t = state->tasks;
+void dtask_run(const dtask_state_t *state, dtask_set_t initial) {
+  const dtask_set_t enabled = state->enabled_dependencies;
   dtask_set_t
-    enabled = state->enabled_dependencies,
     scheduled = initial & enabled,
-    events = 0,
-    id_bit = 1U << dtask_set_find_first(initial);
+    events = 0;
+  dtask_id_t last = state->num_tasks - 1;
 
   while(scheduled) {
+    const dtask_id_t active = dtask_set_find_first(scheduled);
+    const dtask_set_t id_bit = 1U << active;
+    const dtask_t *task = &state->tasks[last - active];
     if((id_bit & scheduled) &&
-       t->func(t, events)) {
+       task->func(task, events)) {
       events |= id_bit;
-      scheduled |= t->dependents & enabled;
+      scheduled |= task->dependents & enabled;
     }
     scheduled &= ~id_bit;
-    id_bit >>= 1;
-    t++;
   }
 }
