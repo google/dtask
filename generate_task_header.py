@@ -144,21 +144,26 @@ static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
     scheduled = initial & enabled,
     events = 0;
 
+#ifndef NO_CLZ
   static const void *dispatch_table[] = {{
 '''.format(name=name))
 
         #dispatch table
         for (task, _, _, _, _, _) in tasks:
             f.write('    &&__{},\n'.format(task))
-        f.write('  };\n')
+        f.write('''  };
+#endif
+''')
 
         #dispatch code
         for (task, _, _, depnts, _, _) in tasks:
             id_bit = dtask_bit(ids[task])
             f.write('''
   if(!scheduled) goto end;
+#ifndef NO_CLZ
   goto *dispatch_table[__builtin_clz(scheduled)];
 __{task}:
+#endif
   if((0x{id_bit:x} & scheduled) &&
             __dtask_{task}(events)) {{
     events |= 0x{id_bit:x};
@@ -166,9 +171,13 @@ __{task}:
   }}
   scheduled &= ~0x{id_bit:x};
 #ifdef {upname}_AFTER_TASK_HOOK
-   {upname}_AFTER_TASK_HOOK();
+   {upname}_AFTER_TASK_HOOK;
 #endif
-'''.format(task=task, id_bit=id_bit, depnts=show_set(depnts), upname=name.upper()))
+'''
+                    .format(task=task,
+                            id_bit=id_bit,
+                            depnts=show_set(depnts),
+                            upname=name.upper()))
 
         #epilogue
         f.write('''
