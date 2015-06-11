@@ -1,6 +1,5 @@
 #include <stdio.h>
 
-// #define NO_CLZ
 // #define ALL_TASKS_AFTER_TASK_HOOK printf("hook\n")
 #include "all_tasks.h"
 

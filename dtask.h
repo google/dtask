@@ -30,12 +30,17 @@ void dtask_disable_all(dtask_state_t *state);
   name##_t name;          \
   bool __dtask_##name(dtask_set_t events)
 
-#define DECLARE_DTASK(name, type...)  \
+#define DECLARE_DTASK(name, type...) \
   typedef type name##_t;             \
   extern name##_t name;              \
   bool __dtask_##name(dtask_set_t events)
 
 #define DTASK_AND(x) (!(~events & (x)))
 #define DTASK_OR(x) (events & (x))
+
+// define NO_CLZ for targets that do not efficiently implement __builtin_clz()
+#if defined(__TARGET_CPU_CORTEX_M0) || defined(__TARGET_CPU_CORTEX_M0PLUS)
+#define NO_CLZ
+#endif
 
 #endif

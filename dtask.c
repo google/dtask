@@ -3,10 +3,11 @@
 
 #include "dtask.h"
 
-static inline
-dtask_id_t dtask_set_find_first(dtask_set_t set) {
-  return __builtin_clz(set);
-}
+#ifdef NO_CLZ
+#define dtask_set_find_first(set, prev) ((prev) - 1)
+#else
+#define dtask_set_find_first(set, prev) (__builtin_clz(set))
+#endif
 
 static inline
 dtask_set_t dtask_bit(dtask_id_t id) {
@@ -16,10 +17,11 @@ dtask_set_t dtask_bit(dtask_id_t id) {
 void dtask_enable(dtask_state_t *state, dtask_set_t set) {
   dtask_set_t enabled_dependencies = state->enabled |= set;
   const dtask_t *tasks = state->tasks;
+  dtask_id_t n = state->num_tasks;
 
   // enable dependencies
   while(set) {
-    dtask_id_t n = dtask_set_find_first(set);
+    n = dtask_set_find_first(set, n);
     enabled_dependencies |= tasks[n].all_dependencies;
     set &= ~dtask_bit(n);
   }
@@ -30,10 +32,11 @@ void dtask_enable(dtask_state_t *state, dtask_set_t set) {
 void dtask_disable(dtask_state_t *state, dtask_set_t set) {
   dtask_set_t enabled = state->enabled & ~set;
   const dtask_t *tasks = state->tasks;
+  dtask_id_t n = state->num_tasks;
 
   // disable dependents
   while(set) {
-    dtask_id_t n = dtask_set_find_first(set);
+    n = dtask_set_find_first(set, n);
     enabled &= ~tasks[n].all_dependents;
     set &= ~dtask_bit(n);
   }
