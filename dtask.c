@@ -49,22 +49,3 @@ void dtask_disable_all(dtask_state_t *state) {
   state->enabled = 0;
   state->enabled_dependencies = 0;
 }
-
-void dtask_run(const dtask_state_t *state, dtask_set_t initial) {
-  const dtask_set_t enabled = state->enabled_dependencies;
-  dtask_set_t
-    scheduled = initial & enabled,
-    events = 0;
-
-  while(scheduled) {
-    const dtask_id_t active = dtask_set_find_first(scheduled);
-    const dtask_set_t id_bit = dtask_bit(active);
-    const dtask_t *task = &state->tasks[active];
-    if((id_bit & scheduled) &&
-       task->func(task, events)) {
-      events |= id_bit;
-      scheduled |= task->dependents & enabled;
-    }
-    scheduled &= ~id_bit;
-  }
-}

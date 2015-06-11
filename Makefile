@@ -1,7 +1,7 @@
 SRC := $(wildcard *.c)
 HEADERS := $(wildcard *.h) all_tasks.h
 OBJS := $(patsubst %.c, %.o, $(SRC))
-CFLAGS := -g -O0 -std=c99
+CFLAGS := -g -O3 -std=c99
 
 .PHONY: all
 all: test

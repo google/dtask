@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
-#include "dtask.h"
+#include "all_tasks.h"
 
 #define DEBUG 1
 

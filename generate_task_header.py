@@ -80,6 +80,9 @@ def show_set(s):
         map(lambda x: x.upper(), s)) if s else "0"
 
 
+def dtask_bit(id):
+    return (1 << (BITS_IN_DTASK_SET_T - 1)) >> id
+
 def generate_header(name, files):
     #touch the header file
     header = name + '.h'
@@ -105,8 +108,7 @@ def generate_header(name, files):
 '''.format(name=name.upper()))
         # id masks
         for (task, _, _, _, _, _) in tasks:
-            f.write('#define {} 0x{:x}\n'.format(task.upper(),
-                                                 1 << (BITS_IN_DTASK_SET_T - id - 1)))
+            f.write('#define {} 0x{:x}\n'.format(task.upper(), dtask_bit(id)))
             ids[task] = id
             id = id + 1
 
@@ -120,26 +122,60 @@ def generate_header(name, files):
                                                        show_set(initial)))
 
         #declare tasks
-        for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
+        for (task, type, _, _, _, _) in tasks:
             f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
 
         #dtask array
         f.write('\nstatic const dtask_t {}[{}] = {{ \\\n'.format(name, id))
         for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
-            f.write('''  {{ /* .func = */ __dtask_{}, \\
-    /* .name = */ "{}", \\
-    /* .dependencies = */ {}, \\
-    /* .dependents = */ {}, \\
-    /* .all_dependencies = */ {}, \\
-    /* .all_dependents = */ {}, \\
-    /* .id = */ {:d} }}, \\\n'''
-                    .format(task, task,
-                            show_set(deps),
-                            show_set(depnts),
-                            show_set(all_deps),
-                            show_set(all_depnts),
-                            ids[task]))
+            f.write('''  {{ /* .all_dependencies = */ {}, \\
+    /* .all_dependents = */ {} \\
+    }}, \\\n'''.format(show_set(all_deps),
+                       show_set(all_depnts)))
         f.write(' };\n')
+
+        #define the runner
+
+        #prologue
+        f.write('''
+static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
+  const dtask_set_t enabled = state->enabled_dependencies;
+  dtask_set_t
+    scheduled = initial & enabled,
+    events = 0;
+
+  static const void *dispatch_table[] = {{
+'''.format(name=name))
+
+        #dispatch table
+        for (task, _, _, _, _, _) in tasks:
+            f.write('    &&__{},\n'.format(task))
+        f.write('  };\n')
+
+        #dispatch code
+        for (task, _, _, depnts, _, _) in tasks:
+            id_bit = dtask_bit(ids[task])
+            f.write('''
+  if(!scheduled) goto end;
+  goto *dispatch_table[__builtin_clz(scheduled)];
+__{task}:
+  if((0x{id_bit:x} & scheduled) &&
+            __dtask_{task}(events)) {{
+    events |= 0x{id_bit:x};
+    scheduled |= ({depnts}) & enabled;
+  }}
+  scheduled &= ~0x{id_bit:x};
+#ifdef {upname}_AFTER_TASK_HOOK
+   {upname}_AFTER_TASK_HOOK();
+#endif
+'''.format(task=task, id_bit=id_bit, depnts=show_set(depnts), upname=name.upper()))
+
+        #epilogue
+        f.write('''
+end:
+  return;
+}
+''')
 
         f.write('''
 #endif
