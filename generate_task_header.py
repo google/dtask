@@ -162,7 +162,6 @@ static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
     events |= {uptask};
     scheduled |= ({depnts}) & enabled;
   }}
-  scheduled &= ~{uptask};
 '''
                     .format(task=task,
                             uptask=task.upper(),

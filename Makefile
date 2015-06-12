@@ -13,7 +13,7 @@ all_tasks.h: $(SRC)
 	python generate_task_header.py all_tasks $(SRC)
 
 %.o: %.c $(HEADERS)
-	gcc -c $*.c -o $*.o $(CFLAGS)
+	gcc -c $*.c -o $*.o $(CFLAGS) $(CFLAGS_EXT)
 
 .PHONY: clean
 clean:
