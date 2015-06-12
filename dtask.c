@@ -66,6 +66,7 @@ void dtask_disable_all(dtask_state_t *state) {
   state->enabled_dependencies = 0;
 }
 
+#ifndef NO_CLZ
 void dtask_run(const dtask_state_t *state, dtask_set_t initial) {
   const dtask_set_t enabled = state->enabled_dependencies;
   dtask_set_t
@@ -85,3 +86,8 @@ void dtask_run(const dtask_state_t *state, dtask_set_t initial) {
     scheduled &= ~id_bit;
   }
 }
+#else
+void dtask_run(const dtask_state_t *state, dtask_set_t initial) {
+  state->run(state, initial);
+}
+#endif

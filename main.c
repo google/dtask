@@ -6,12 +6,7 @@
 #define LENGTH(a) (sizeof(a) / sizeof((a)[0]))
 
 int main() {
-  dtask_state_t state = {
-    .tasks = all_tasks,
-    .num_tasks = LENGTH(all_tasks),
-    .enabled = 0,
-    .enabled_dependencies = 0
-  };
+  dtask_state_t state = DTASK_INITIAL_STATE(all_tasks);
 
   count = -1;
 

@@ -126,10 +126,15 @@ def generate_header(name, files):
             f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
 
         #dtask array
-        f.write('\nstatic const dtask_t {}[{}] = {{ \\\n'.format(name, id))
+        f.write('''
+static const dtask_t {}[{}] = {{
+'''.format(name, id))
         for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
-            f.write('''  {{ /* .task = */ __dtask_{task},
+            f.write('''  {{
+#ifndef NO_CLZ
+    /* .task = */ __dtask_{task},
     /* .dependencies = */ {depnts},
+#endif
     /* .all_dependencies = */ {all_deps},
     /* .all_dependents = */ {all_depnts}
     }},\n'''.format(task=task,
@@ -139,6 +144,7 @@ def generate_header(name, files):
         f.write(' };\n')
 
         #define the runner
+        f.write('\n#ifdef NO_CLZ\n')
 
         #prologue
         f.write('''
@@ -147,34 +153,16 @@ static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
   dtask_set_t
     scheduled = initial & enabled,
     events = 0;
-
-#ifndef NO_CLZ
-  static const void *dispatch_table[] = {{
 '''.format(name=name))
-
-        #dispatch table
-        for (task, _, _, _, _, _) in tasks:
-            f.write('    &&__{},\n'.format(task))
-        f.write('''  };
-#endif
-''')
 
         #dispatch code
         for (task, _, _, depnts, _, _) in tasks:
             f.write('''
-  if(!scheduled) goto end;
-#ifndef NO_CLZ
-  goto *dispatch_table[__builtin_clz(scheduled)];
-__{task}:
-#endif
   if(({uptask} & scheduled) && __dtask_{task}(events)) {{
     events |= {uptask};
     scheduled |= ({depnts}) & enabled;
   }}
-            scheduled &= ~{uptask};
-#ifdef {upname}_AFTER_TASK_HOOK
-   {upname}_AFTER_TASK_HOOK;
-#endif
+  scheduled &= ~{uptask};
 '''
                     .format(task=task,
                             uptask=task.upper(),
@@ -183,10 +171,10 @@ __{task}:
 
         #epilogue
         f.write('''
-end:
   return;
 }
 ''')
+        f.write('\n#endif\n')
 
         f.write('''
 #endif
