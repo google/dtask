@@ -3,21 +3,34 @@
 
 #include "dtask.h"
 
+#define BIT_WIDTH(type) (sizeof(type) * 8)
+
+static inline
+dtask_set_t dtask_bit(dtask_id_t id) {
+  return (1U << (BIT_WIDTH(dtask_set_t) - 1)) >> id;
+}
+
 #ifdef NO_CLZ
-#define dtask_set_find_first(set, prev) ((prev) - 1)
+dtask_id_t dtask_set_find_first(dtask_set_t set, dtask_id_t prev) {
+  dtask_id_t x = prev;
+  dtask_set_t s = set << x;
+  while(s) {
+    if(dtask_bit(0) & s) {
+      return x;
+    }
+    x++;
+    s <<= 1;
+  }
+  return BIT_WIDTH(dtask_set_t);
+}
 #else
 #define dtask_set_find_first(set, prev) (__builtin_clz(set))
 #endif
 
-static inline
-dtask_set_t dtask_bit(dtask_id_t id) {
-  return (1U << (sizeof(dtask_set_t) * 8 - 1)) >> id;
-}
-
 void dtask_enable(dtask_state_t *state, dtask_set_t set) {
   dtask_set_t enabled_dependencies = state->enabled |= set;
   const dtask_t *tasks = state->tasks;
-  dtask_id_t n = state->num_tasks;
+  dtask_id_t n = 0;
 
   // enable dependencies
   while(set) {
@@ -32,7 +45,7 @@ void dtask_enable(dtask_state_t *state, dtask_set_t set) {
 void dtask_disable(dtask_state_t *state, dtask_set_t set) {
   dtask_set_t enabled = state->enabled & ~set;
   const dtask_t *tasks = state->tasks;
-  dtask_id_t n = state->num_tasks;
+  dtask_id_t n = 0;
 
   // disable dependents
   while(set) {
@@ -51,4 +64,24 @@ void dtask_disable(dtask_state_t *state, dtask_set_t set) {
 void dtask_disable_all(dtask_state_t *state) {
   state->enabled = 0;
   state->enabled_dependencies = 0;
+}
+
+void dtask_run(const dtask_state_t *state, dtask_set_t initial) {
+  const dtask_set_t enabled = state->enabled_dependencies;
+  dtask_set_t
+    scheduled = initial & enabled,
+    events = 0,
+    active = 0;
+
+  while(scheduled) {
+    active = dtask_set_find_first(scheduled, active);
+    const dtask_set_t id_bit = dtask_bit(active);
+    const dtask_t *task = &state->tasks[active];
+    if((id_bit & scheduled) &&
+       task->func(events)) {
+      events |= id_bit;
+      scheduled |= task->dependents & enabled;
+    }
+    scheduled &= ~id_bit;
+  }
 }

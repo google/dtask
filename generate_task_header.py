@@ -128,10 +128,14 @@ def generate_header(name, files):
         #dtask array
         f.write('\nstatic const dtask_t {}[{}] = {{ \\\n'.format(name, id))
         for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
-            f.write('''  {{ /* .all_dependencies = */ {}, \\
-    /* .all_dependents = */ {} \\
-    }}, \\\n'''.format(show_set(all_deps),
-                       show_set(all_depnts)))
+            f.write('''  {{ /* .task = */ __dtask_{task},
+    /* .dependencies = */ {depnts},
+    /* .all_dependencies = */ {all_deps},
+    /* .all_dependents = */ {all_depnts}
+    }},\n'''.format(task=task,
+                    depnts=show_set(depnts),
+                    all_deps=show_set(all_deps),
+                    all_depnts=show_set(all_depnts)))
         f.write(' };\n')
 
         #define the runner

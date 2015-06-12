@@ -10,7 +10,8 @@ typedef uint8_t dtask_id_t;
 typedef struct dtask dtask_t;
 struct dtask
 {
-  dtask_set_t all_dependencies, all_dependents;
+  bool (*func)(uint32_t);
+  dtask_set_t dependents, all_dependencies, all_dependents;
 };
 
 typedef struct dtask_state
@@ -20,6 +21,7 @@ typedef struct dtask_state
   dtask_set_t enabled, enabled_dependencies;
 } dtask_state_t;
 
+void dtask_run(const dtask_state_t *state, dtask_set_t initial);
 void dtask_enable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable_all(dtask_state_t *state);
