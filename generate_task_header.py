@@ -5,17 +5,19 @@ import re
 from toposort import toposort_flatten
 import copy
 import subprocess
-import sys
+import argparse
 
 BITS_IN_DTASK_SET_T = 32
-
+options = None
 dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,\s*(.+)\s*\)')
 dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
 
 
 def find_tasks_in_file(filename):
     tasks = []
-    cpp = subprocess.Popen(['cpp', '-w', filename],
+    includes = ['-I' + i for i in options.include_dirs]
+    macros = ['-D' + d for d in options.macros]
+    cpp = subprocess.Popen(['cpp'] + includes + macros + [filename],
                            stdout=subprocess.PIPE)
     lines = iter(cpp.stdout.readline, '')
     for line in lines:
@@ -83,9 +85,16 @@ def show_set(s):
 def dtask_bit(id):
     return (1 << (BITS_IN_DTASK_SET_T - 1)) >> id
 
-def generate_header(name, files):
+
+def generate_header():
+    name = options.target
+    files = options.source
     #touch the header file
-    header = name + '.h'
+    if(options.output_file):
+        header = options.output_file
+    else:
+        header = name + '.h'
+
     with open(header, 'w') as f:
         os.utime(header, None)
         f.write('#undef DTASK\n')
@@ -179,8 +188,20 @@ static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
 #endif
 ''')
 
-def main(argv):
-    generate_header(argv[1], argv[2:])
+
+def main():
+    global options
+    parser = argparse.ArgumentParser(description='Generate a DTask header')
+    parser.add_argument('source', nargs='+',
+                        help='a source file to process')
+    parser.add_argument('--target', dest='target', help='target name', required=True)
+    parser.add_argument('-o', dest='output_file', help='output file')
+    parser.add_argument('-I', dest='include_dirs', metavar='DIR',
+                        action='append', help='include dir', default=[])
+    parser.add_argument('-D', dest='macros', metavar='MACRO',
+                        action='append', help='define macro', default=[])
+    options, _ = parser.parse_known_args()
+    generate_header()
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
