@@ -99,6 +99,7 @@ def generate_header():
         os.utime(header, None)
         f.write('#undef DTASK\n')
         f.write('#undef DGET\n')
+        f.flush()
 
     tasks = []
     for filename in sorted(files):
@@ -157,6 +158,7 @@ static const dtask_t {}[{}] = {{
 
         #prologue
         f.write('''
+#pragma GCC diagnostic ignored "-Wunused-function"
 static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
   const dtask_set_t enabled = state->enabled_dependencies;
   dtask_set_t
@@ -192,16 +194,18 @@ static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
 def main():
     global options
     parser = argparse.ArgumentParser(description='Generate a DTask header')
-    parser.add_argument('source', nargs='+',
+    parser.add_argument('source', nargs='*',
                         help='a source file to process')
-    parser.add_argument('--target', dest='target', help='target name', required=True)
+    parser.add_argument('--target', dest='target', help='target name',
+                        required=True)
     parser.add_argument('-o', dest='output_file', help='output file')
     parser.add_argument('-I', dest='include_dirs', metavar='DIR',
                         action='append', help='include dir', default=[])
     parser.add_argument('-D', dest='macros', metavar='MACRO',
                         action='append', help='define macro', default=[])
     options, _ = parser.parse_known_args()
-    generate_header()
+    if(options.source):
+        generate_header()
 
 if __name__ == "__main__":
     main()

@@ -3,13 +3,6 @@
 
 #include "dtask.h"
 
-#define BIT_WIDTH(type) (sizeof(type) * 8)
-
-static inline
-dtask_set_t dtask_bit(dtask_id_t id) {
-  return (1U << (BIT_WIDTH(dtask_set_t) - 1)) >> id;
-}
-
 #ifdef NO_CLZ
 dtask_id_t dtask_set_find_first(dtask_set_t set, dtask_id_t prev) {
   dtask_id_t x = prev;
@@ -21,7 +14,7 @@ dtask_id_t dtask_set_find_first(dtask_set_t set, dtask_id_t prev) {
     x++;
     s <<= 1;
   }
-  return BIT_WIDTH(dtask_set_t);
+  return DTASK_BIT_WIDTH(dtask_set_t);
 }
 #else
 #define dtask_set_find_first(set, prev) (__builtin_clz(set))

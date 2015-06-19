@@ -51,11 +51,20 @@ void dtask_disable_all(dtask_state_t *state);
 
 #define DTASK_AND(x) (!(~events & (x)))
 #define DTASK_OR(x) (events & (x))
+#define DTASK_LENGTH(a) (sizeof(a) / sizeof((a)[0]))
 
 #ifndef NO_CLZ
-#define DTASK_INITIAL_STATE(name) {(name), LENGTH(name), 0, 0}
+#define DTASK_INITIAL_STATE(name) {(name), DTASK_LENGTH(name), 0, 0}
 #else
-#define DTASK_INITIAL_STATE(name) {(name), LENGTH(name), 0, 0, name##_run}
+#define DTASK_INITIAL_STATE(name) {(name), DTASK_LENGTH(name), 0, 0, name##_run}
 #endif
+
+#define DTASK_BIT_WIDTH(type) (sizeof(type) * 8)
+
+static inline
+dtask_set_t dtask_bit(dtask_id_t id) {
+  return (1U << (DTASK_BIT_WIDTH(dtask_set_t) - 1)) >> id;
+}
+
 
 #endif

@@ -3,8 +3,6 @@
 // #define ALL_TASKS_AFTER_TASK_HOOK printf("hook\n")
 #include "all_tasks.h"
 
-#define LENGTH(a) (sizeof(a) / sizeof((a)[0]))
-
 int main() {
   dtask_state_t state = DTASK_INITIAL_STATE(all_tasks);
 
