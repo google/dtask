@@ -119,8 +119,10 @@ def generate_header():
         # id masks
         for (task, _, _, _, _, _) in tasks:
             f.write('#define {} 0x{:x}\n'.format(task.upper(), dtask_bit(id)))
+            f.write('#define {}_ID {:d}\n'.format(task.upper(), id))
             ids[task] = id
             id = id + 1
+        f.write('#define {}_COUNT {:d}\n'.format(name.upper(), id))
 
         #initial
         initial = set()
