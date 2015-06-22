@@ -43,6 +43,8 @@ void dtask_disable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable_all(dtask_state_t *state);
 void __dtask_noop();
 
+#ifndef GENERATING_TASK_HEADER
+
 #define DGET(x) (x)
 
 #define DTASK(name, ...)  \
@@ -54,6 +56,8 @@ void __dtask_noop();
 
 #define DTASK_DISABLE(name)  \
   void __dtask_disable_##name()
+
+#endif
 
 #define DECLARE_DTASK(name, type...) \
   typedef type name##_t;             \

@@ -23,7 +23,8 @@ dtask_id_t dtask_set_find_first(dtask_set_t set, dtask_id_t prev) {
 #endif
 
 void _dtask_enable(dtask_state_t *state, dtask_set_t set) {
-  dtask_set_t enabled_dependencies = state->enabled |= set;
+  state->enabled |= set;
+  dtask_set_t enabled_dependencies = state->enabled_dependencies | set;
   const dtask_t *tasks = state->tasks;
   dtask_id_t n = 0;
 

@@ -33,7 +33,7 @@ def find_tasks_in_file(filename):
     last_task = None
     includes = ['-I' + i for i in options.include_dirs]
     macros = ['-D' + d for d in options.macros]
-    cpp = subprocess.Popen(['cpp'] + includes + macros + [filename],
+    cpp = subprocess.Popen(['cpp', '-DGENERATING_TASK_HEADER'] + includes + macros + [filename],
                            stdout=subprocess.PIPE)
     lines = iter(cpp.stdout.readline, '')
     for line in lines:
@@ -116,9 +116,6 @@ def generate_header():
 
     with open(header, 'w') as f:
         os.utime(header, None)
-        f.write('#undef DTASK\n')
-        f.write('#undef DGET\n')
-        f.flush()
 
     tasks = {}
     for filename in sorted(files):
@@ -172,7 +169,7 @@ static const dtask_t {}[{}] = {{
     /* .enable_func = */ {en},
     /* .disable_func = */ {dis},
 #ifndef NO_CLZ
-    /* .dependencies = */ {depnts},
+    /* .dependents = */ {depnts},
 #endif
     /* .all_dependencies = */ {all_deps},
     /* .all_dependents = */ {all_depnts}
