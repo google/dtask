@@ -14,8 +14,22 @@ dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
 dtask_enable_or_disable_re = re.compile(r'DTASK_(EN|DIS)ABLE\(\s*(\w+)\s*\)')
 
 
+def init_task(tasks, name):
+    if not name in tasks:
+        tasks[name] = {
+            'type': 'int',
+            'deps': set(),
+            'depnts': set(),
+            'all_deps': set(),
+            'all_depnts': set(),
+            'en': False,
+            'dis': False
+        }
+
+
 def find_tasks_in_file(filename):
     tasks = {}
+
     last_task = None
     includes = ['-I' + i for i in options.include_dirs]
     macros = ['-D' + d for d in options.macros]
@@ -30,15 +44,8 @@ def find_tasks_in_file(filename):
             if match:
                 name = match.group(1)
                 type = match.group(2)
-                tasks[name] = {
-                    'type': type,
-                    'deps': set(),
-                    'depnts': set(),
-                    'all_deps': set(),
-                    'all_depnts': set(),
-                    'en': False,
-                    'dis': False
-                }
+                init_task(tasks, name)
+                tasks[name]['type'] = type
                 last_task = tasks[name]
 
             #match DTASK_(EN|DIS)ABLE(...) definitions
@@ -46,8 +53,10 @@ def find_tasks_in_file(filename):
             if match:
                 name = match.group(2)
                 if match.group(1) == 'EN':
+                    init_task(tasks, name)
                     tasks[name]['en'] = True
                 elif match.group(1) == 'DIS':
+                    init_task(tasks, name)
                     tasks[name]['dis'] = True
 
             #match DGET(...) expressions

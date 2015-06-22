@@ -91,6 +91,12 @@ DTASK(combine57, struct { int m5, m7; }) {
 }
 
 
+DTASK_ENABLE(mod_three) {
+  printf("mod_three enabled\n");
+}
+DTASK_DISABLE(mod_three) {
+  printf("mod_three disabled\n");
+}
 DTASK(mod_three, int) {
   int x = DGET(count);
   if(x % 3 != 0) return false;
@@ -98,13 +104,13 @@ DTASK(mod_three, int) {
   debugf("[3] ");
   return true;
 }
-DTASK_ENABLE(mod_three) {
-  printf("mod_three enabled\n");
-}
-DTASK_DISABLE(mod_three) {
-  printf("mod_three disabled\n");
-}
 
+DTASK_ENABLE(mod_five) {
+  printf("mod_five enabled\n");
+}
+DTASK_DISABLE(mod_five) {
+  printf("mod_five disabled\n");
+}
 DTASK(mod_five, int) {
   int x = DGET(count);
   if(x % 5 != 0) return false;
@@ -112,25 +118,19 @@ DTASK(mod_five, int) {
   debugf("[5] ");
   return true;
 }
-DTASK_ENABLE(mod_five) {
-  printf("mod_five enabled\n");
-}
-DTASK_DISABLE(mod_five) {
-  printf("mod_five disabled\n");
-}
 
+DTASK_ENABLE(mod_seven) {
+  printf("mod_seven enabled\n");
+}
+DTASK_DISABLE(mod_seven) {
+  printf("mod_seven disabled\n");
+}
 DTASK(mod_seven, int) {
   int x = DGET(count);
   if(x % 7 != 0) return false;
   mod_seven = x / 7;
   debugf("[7] ");
   return true;
-}
-DTASK_ENABLE(mod_seven) {
-  printf("mod_seven enabled\n");
-}
-DTASK_DISABLE(mod_seven) {
-  printf("mod_seven disabled\n");
 }
 
 DTASK(count, int) {
