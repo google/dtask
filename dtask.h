@@ -17,6 +17,10 @@ struct dtask
 {
 #ifndef NO_CLZ
   bool (*func)(uint32_t);
+#endif
+  void (*enable_func)();
+  void (*disable_func)();
+#ifndef NO_CLZ
   dtask_set_t dependents;
 #endif
   dtask_set_t all_dependencies, all_dependents;
@@ -37,6 +41,7 @@ void dtask_run(const dtask_state_t *state, dtask_set_t initial);
 void dtask_enable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable_all(dtask_state_t *state);
+void __dtask_noop();
 
 #define DGET(x) (x)
 
@@ -44,10 +49,22 @@ void dtask_disable_all(dtask_state_t *state);
   name##_t name;          \
   bool __dtask_##name(dtask_set_t events)
 
+#define DTASK_ENABLE(name)  \
+  void __dtask_enable_##name()
+
+#define DTASK_DISABLE(name)  \
+  void __dtask_disable_##name()
+
 #define DECLARE_DTASK(name, type...) \
   typedef type name##_t;             \
   extern name##_t name;              \
   bool __dtask_##name(dtask_set_t events)
+
+#define DECLARE_DTASK_ENABLE(name) \
+  void __dtask_enable_##name()
+
+#define DECLARE_DTASK_DISABLE(name) \
+  void __dtask_disable_##name()
 
 #define DTASK_AND(x) (!(~events & (x)))
 #define DTASK_OR(x) (events & (x))

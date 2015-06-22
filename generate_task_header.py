@@ -11,10 +11,12 @@ BITS_IN_DTASK_SET_T = 32
 options = None
 dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,\s*(.+)\s*\)')
 dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
+dtask_enable_or_disable_re = re.compile(r'DTASK_(EN|DIS)ABLE\(\s*(\w+)\s*\)')
 
 
 def find_tasks_in_file(filename):
-    tasks = []
+    tasks = {}
+    last_task = None
     includes = ['-I' + i for i in options.include_dirs]
     macros = ['-D' + d for d in options.macros]
     cpp = subprocess.Popen(['cpp'] + includes + macros + [filename],
@@ -22,59 +24,60 @@ def find_tasks_in_file(filename):
     lines = iter(cpp.stdout.readline, '')
     for line in lines:
         if line[0] != '#':
+
+            #match DTASK(...) definitions
             match = dtask_re.search(line)
             if match:
-                #print(match.group(0))
-                tasks.append({'name': match.group(1),
-                              'type': match.group(2),
-                              'deps': set()})
+                name = match.group(1)
+                type = match.group(2)
+                tasks[name] = {
+                    'type': type,
+                    'deps': set(),
+                    'depnts': set(),
+                    'all_deps': set(),
+                    'all_depnts': set(),
+                    'en': False,
+                    'dis': False
+                }
+                last_task = tasks[name]
+
+            #match DTASK_(EN|DIS)ABLE(...) definitions
+            match = dtask_enable_or_disable_re.search(line)
+            if match:
+                name = match.group(2)
+                if match.group(1) == 'EN':
+                    tasks[name]['en'] = True
+                elif match.group(1) == 'DIS':
+                    tasks[name]['dis'] = True
+
+            #match DGET(...) expressions
             for match in dget_re.finditer(line):
                 if match:
-                    #print(match.group(0))
-                    tasks[-1]['deps'].add(match.group(1))
+                    last_task['deps'].add(match.group(1))
     return tasks
 
 
 def order_tasks(tasks):
-    types = {}
-    deps = {}
-    depnts = {}
-    all_deps = {}
-    all_depnts = {}
-
-    #build dictionaries
-    for task in tasks:
-        types[task['name']] = task['type']
-        deps[task['name']] = task['deps']
-
-    sorted = toposort_flatten(copy.deepcopy(deps))
+    sorted = toposort_flatten({k: v['deps'] for (k, v) in tasks.iteritems()})
 
     #calculate dependents
     for name in sorted:
-        depnts[name] = set()
-        for d in deps[name]:
-            depnts[d].add(name)
+        for d in tasks[name]['deps']:
+            tasks[d]['depnts'].add(name)
 
     #calculate dependencies transitively
     for name in sorted:
-        d = copy.deepcopy(deps[name])
-        all_deps[name] = d
-        for dep in deps[name]:
-            d |= all_deps[dep]
-        all_deps[name] = d
+        d = copy.deepcopy(tasks[name]['deps'])
+        for dep in tasks[name]['deps']:
+            d |= tasks[dep]['all_deps']
+        tasks[name]['all_deps'] = d
 
     #calculate dependents transitively
     for name in sorted:
-        all_depnts[name] = set()
-        for d in all_deps[name]:
-            all_depnts[d].add(name)
+        for d in tasks[name]['all_deps']:
+            tasks[d]['all_depnts'].add(name)
 
-    return map(lambda name: (name, types[name],
-                             deps[name],
-                             depnts[name],
-                             all_deps[name],
-                             all_depnts[name]),
-               sorted)
+    return map(lambda name: (name, tasks[name]), sorted)
 
 
 def show_set(s):
@@ -84,6 +87,13 @@ def show_set(s):
 
 def dtask_bit(id):
     return (1 << (BITS_IN_DTASK_SET_T - 1)) >> id
+
+
+def func_name(task_name, type, present):
+    if present:
+        return '__dtask_' + type + '_' + task_name
+    else:
+        return '__dtask_noop'
 
 
 def generate_header():
@@ -101,10 +111,10 @@ def generate_header():
         f.write('#undef DGET\n')
         f.flush()
 
-    tasks = []
+    tasks = {}
     for filename in sorted(files):
         new_tasks = find_tasks_in_file(filename)
-        tasks.extend(new_tasks)
+        tasks.update(new_tasks)
     tasks = order_tasks(tasks)
     ids = {}
     id = 0
@@ -117,7 +127,7 @@ def generate_header():
 
 '''.format(name=name.upper()))
         # id masks
-        for (task, _, _, _, _, _) in tasks:
+        for (task, _) in tasks:
             f.write('#define {} 0x{:x}\n'.format(task.upper(), dtask_bit(id)))
             f.write('#define {}_ID {:d}\n'.format(task.upper(), id))
             ids[task] = id
@@ -126,33 +136,43 @@ def generate_header():
 
         #initial
         initial = set()
-        for (task, _, deps, _, _, _) in tasks:
-            if not deps:
+        for (task, dict) in tasks:
+            if not dict['deps']:
                 initial.add(task)
 
         f.write('\n#define {}_INITIAL ({})\n\n'.format(name.upper(),
                                                        show_set(initial)))
 
         #declare tasks
-        for (task, type, _, _, _, _) in tasks:
-            f.write('DECLARE_DTASK({}, {});\n'.format(task, type))
+        for (task, dict) in tasks:
+            f.write('DECLARE_DTASK({}, {});\n'.format(task, dict['type']))
+            if dict['en']:
+                f.write('DECLARE_DTASK_ENABLE({});\n'.format(task))
+            if dict['dis']:
+                f.write('DECLARE_DTASK_DISABLE({});\n'.format(task))
 
         #dtask array
         f.write('''
 static const dtask_t {}[{}] = {{
 '''.format(name, id))
-        for (task, type, deps, depnts, all_deps, all_depnts) in tasks:
+        for (task, dict) in tasks:
             f.write('''  {{
 #ifndef NO_CLZ
-    /* .task = */ __dtask_{task},
+    /* .func = */ __dtask_{task},
+#endif
+    /* .enable_func = */ {en},
+    /* .disable_func = */ {dis},
+#ifndef NO_CLZ
     /* .dependencies = */ {depnts},
 #endif
     /* .all_dependencies = */ {all_deps},
     /* .all_dependents = */ {all_depnts}
     }},\n'''.format(task=task,
-                    depnts=show_set(depnts),
-                    all_deps=show_set(all_deps),
-                    all_depnts=show_set(all_depnts)))
+                    en=func_name(task, 'enable', dict['en']),
+                    dis=func_name(task, 'disable', dict['dis']),
+                    depnts=show_set(dict['depnts']),
+                    all_deps=show_set(dict['all_deps']),
+                    all_depnts=show_set(dict['all_depnts'])))
         f.write(' };\n')
 
         #define the runner
@@ -169,7 +189,7 @@ static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
 '''.format(name=name))
 
         #dispatch code
-        for (task, _, _, depnts, _, _) in tasks:
+        for (task, dict) in tasks:
             f.write('''
   if(({uptask} & scheduled) && __dtask_{task}(events)) {{
     events |= {uptask};
@@ -178,7 +198,7 @@ static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
 '''
                     .format(task=task,
                             uptask=task.upper(),
-                            depnts=show_set(depnts),
+                            depnts=show_set(dict['depnts']),
                             upname=name.upper()))
 
         #epilogue
