@@ -10,6 +10,7 @@ typedef uint8_t dtask_id_t;
 // define NO_CLZ for targets that do not efficiently implement __builtin_clz()
 #if defined(__TARGET_CPU_CORTEX_M0) || defined(__TARGET_CPU_CORTEX_M0PLUS)
 #define NO_CLZ
+#define NO_CTZ
 #endif
 
 typedef struct dtask dtask_t;
@@ -40,7 +41,6 @@ struct dtask_state
 void dtask_run(const dtask_state_t *state, dtask_set_t initial);
 void dtask_enable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
-void dtask_disable_all(dtask_state_t *state);
 void __dtask_noop();
 
 #ifndef GENERATING_TASK_HEADER
@@ -82,9 +82,11 @@ void __dtask_noop();
 
 #define DTASK_BIT_WIDTH(type) (sizeof(type) * 8)
 
+#define DTASK_MAX_ID (DTASK_BIT_WIDTH(dtask_set_t) - 1)
+
 static inline
 dtask_set_t dtask_bit(dtask_id_t id) {
-  return (1U << (DTASK_BIT_WIDTH(dtask_set_t) - 1)) >> id;
+  return (1U << DTASK_MAX_ID) >> id;
 }
 
 

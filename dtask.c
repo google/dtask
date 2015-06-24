@@ -22,6 +22,23 @@ dtask_id_t dtask_set_find_first(dtask_set_t set, dtask_id_t prev) {
 #define dtask_set_find_first(set, prev) (__builtin_clz(set))
 #endif
 
+#ifdef NO_CTZ
+dtask_id_t dtask_set_find_last(dtask_set_t set, dtask_id_t prev) {
+  dtask_id_t x = DTASK_MAX_ID - prev;
+  dtask_set_t s = set >> x;
+  while(s) {
+    if(1 & set) {
+      return DTASK_MAX_ID - x;
+    }
+    x++;
+    s >>= 1;
+  };
+  return -1;
+}
+#else
+#define dtask_set_find_last(set, prev) (DTASK_MAX_ID - __builtin_ctz(set))
+#endif
+
 void _dtask_enable(dtask_state_t *state, dtask_set_t set) {
   state->enabled |= set;
   dtask_set_t enabled_dependencies = state->enabled_dependencies | set;
@@ -77,30 +94,14 @@ void dtask_disable(dtask_state_t *state, dtask_set_t set) {
   _dtask_disable(state, set);
   dtask_set_t new_disabled = ~state->enabled_dependencies & prev_enabled;
   const dtask_t *tasks = state->tasks;
-  dtask_id_t n = 0;
+  dtask_id_t n = DTASK_MAX_ID;
 
-  // call disable functions
+  // call disable functions (in reverse order, before dependencies)
   while(new_disabled) {
-    n = dtask_set_find_first(new_disabled, n);
+    n = dtask_set_find_last(new_disabled, n);
     tasks[n].disable_func();
     new_disabled &= ~dtask_bit(n);
   }
-}
-
-void dtask_disable_all(dtask_state_t *state) {
-  dtask_set_t new_disabled = state->enabled_dependencies;
-  const dtask_t *tasks = state->tasks;
-  dtask_id_t n = 0;
-
-  // call disable functions
-  while(new_disabled) {
-    n = dtask_set_find_first(new_disabled, n);
-    tasks[n].disable_func();
-    new_disabled &= ~dtask_bit(n);
-  }
-
-  state->enabled = 0;
-  state->enabled_dependencies = 0;
 }
 
 #ifndef NO_CLZ
