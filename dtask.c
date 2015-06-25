@@ -39,7 +39,7 @@ dtask_id_t dtask_set_find_last(dtask_set_t set, dtask_id_t prev) {
 #define dtask_set_find_last(set, prev) (DTASK_MAX_ID - __builtin_ctz(set))
 #endif
 
-void _dtask_enable(dtask_state_t *state, dtask_set_t set) {
+static void dtask_state_enable(dtask_state_t *state, dtask_set_t set) {
   state->enabled |= set;
   dtask_set_t enabled_dependencies = state->enabled_dependencies | set;
   const dtask_t *tasks = state->tasks;
@@ -55,9 +55,7 @@ void _dtask_enable(dtask_state_t *state, dtask_set_t set) {
   state->enabled_dependencies = enabled_dependencies;
 }
 
-void dtask_enable(dtask_state_t *state, dtask_set_t set) {
-  dtask_set_t prev_enabled = state->enabled_dependencies;
-  _dtask_enable(state, set);
+static void dtask_call_enable_functions(dtask_state_t *state, dtask_set_t prev_enabled) {
   dtask_set_t new_enabled = state->enabled_dependencies & ~prev_enabled;
   const dtask_t *tasks = state->tasks;
   dtask_id_t n = 0;
@@ -70,7 +68,14 @@ void dtask_enable(dtask_state_t *state, dtask_set_t set) {
   }
 }
 
-void _dtask_disable(dtask_state_t *state, dtask_set_t set) {
+void dtask_enable(dtask_state_t *state, dtask_set_t set)
+{
+  dtask_set_t prev_enabled = state->enabled_dependencies;
+  dtask_state_enable(state, set);
+  dtask_call_enable_functions(state, prev_enabled);
+}
+
+static void dtask_state_disable(dtask_state_t *state, dtask_set_t set) {
   dtask_set_t enabled = state->enabled & ~set;
   const dtask_t *tasks = state->tasks;
   dtask_id_t n = 0;
@@ -86,12 +91,10 @@ void _dtask_disable(dtask_state_t *state, dtask_set_t set) {
 
   // clear and re-enable dependencies
   state->enabled_dependencies = 0;
-  _dtask_enable(state, enabled);
+  dtask_state_enable(state, enabled);
 }
 
-void dtask_disable(dtask_state_t *state, dtask_set_t set) {
-  dtask_set_t prev_enabled = state->enabled_dependencies;
-  _dtask_disable(state, set);
+static void dtask_call_disable_functions(dtask_state_t *state, dtask_set_t prev_enabled) {
   dtask_set_t new_disabled = ~state->enabled_dependencies & prev_enabled;
   const dtask_t *tasks = state->tasks;
   dtask_id_t n = DTASK_MAX_ID;
@@ -102,6 +105,22 @@ void dtask_disable(dtask_state_t *state, dtask_set_t set) {
     tasks[n].disable_func();
     new_disabled &= ~dtask_bit(n);
   }
+}
+
+void dtask_disable(dtask_state_t *state, dtask_set_t set)
+{
+  dtask_set_t prev_enabled = state->enabled_dependencies;
+  dtask_state_disable(state, set);
+  dtask_call_disable_functions(state, prev_enabled);
+}
+
+void dtask_switch(dtask_state_t *state, dtask_set_t set) {
+  dtask_set_t prev_enabled = state->enabled_dependencies;
+  state->enabled = 0;
+  state->enabled_dependencies = 0;
+  dtask_state_enable(state, set);
+  dtask_call_disable_functions(state, prev_enabled);
+  dtask_call_enable_functions(state, prev_enabled);
 }
 
 #ifndef NO_CLZ

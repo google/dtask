@@ -8,47 +8,43 @@ int main() {
 
   count = -1;
 
-  printf("\n\n_____ enabling OUTPUT35 _____\n");
-  dtask_disable(&state, ~0);
-  dtask_enable(&state, OUTPUT35);
+  printf("\n\n_____ OUTPUT35 _____\n");
+  dtask_switch(&state, OUTPUT35);
 
   for(int i = 0; i < 100; i++) {
     dtask_run(&state, ALL_TASKS_INITIAL);
   }
 
-  printf("\n\n_____ enabling OUTPUT57 _____\n");
-  dtask_disable(&state, ~0);
-  dtask_enable(&state, OUTPUT57);
+  printf("\n\n_____ OUTPUT57 _____\n");
+  dtask_switch(&state, OUTPUT57);
 
   for(int i = 0; i < 100; i++) {
     dtask_run(&state, ALL_TASKS_INITIAL);
   }
 
-  printf("\n\n_____ enabling OUTPUT357 _____\n");
-  dtask_disable(&state, ~0);
-  dtask_enable(&state, OUTPUT357);
+  printf("\n\n_____ OUTPUT357 _____\n");
+  dtask_switch(&state, OUTPUT357);
 
   for(int i = 0; i < 500; i++) {
     dtask_run(&state, ALL_TASKS_INITIAL);
   }
 
   printf("\n\n_____ disabling MOD_SEVEN _____\n");
-  dtask_enable(&state, OUTPUT35 | OUTPUT57);
+  dtask_switch(&state, OUTPUT35 | OUTPUT57);
   dtask_disable(&state, MOD_SEVEN);
   for(int i = 0; i < 100; i++) {
     dtask_run(&state, ALL_TASKS_INITIAL);
   }
 
   printf("\n\n_____ disabling OUTPUT35 _____\n");
-  dtask_enable(&state, OUTPUT35 | OUTPUT57);
+  dtask_switch(&state, OUTPUT35 | OUTPUT57);
   dtask_disable(&state, OUTPUT35);
   for(int i = 0; i < 100; i++) {
     dtask_run(&state, ALL_TASKS_INITIAL);
   }
 
   printf("\n\n_____ FIZZBUZZ _____\n");
-  dtask_disable(&state, ~0);
-  dtask_enable(&state, FIZZBUZZ);
+  dtask_switch(&state, FIZZBUZZ);
   count = 0;
   for(int i = 0; i <= 100; i++) {
     dtask_run(&state, ALL_TASKS_INITIAL);
