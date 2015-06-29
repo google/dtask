@@ -17,7 +17,7 @@ typedef struct dtask dtask_t;
 struct dtask
 {
 #ifndef NO_CLZ
-  bool (*func)(uint32_t);
+  bool (*func)(dtask_set_t events);
 #endif
   void (*enable_func)();
   void (*disable_func)();
