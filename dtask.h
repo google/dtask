@@ -34,7 +34,7 @@ struct dtask_state
   const dtask_id_t num_tasks;
   dtask_set_t enabled, enabled_dependencies;
 #ifdef NO_CLZ
-  void (*run)(const dtask_state_t *state, dtask_set_t initial);
+  dtask_set_t (*run)(const dtask_state_t *state, dtask_set_t initial);
 #endif
 };
 
@@ -44,7 +44,7 @@ void dtask_disable(dtask_state_t *state, dtask_set_t set);
 void dtask_switch(dtask_state_t *state, dtask_set_t set);
 void __dtask_noop();
 
-#ifndef GENERATING_TASK_HEADER
+#ifndef DTASK_GEN
 
 #define DGET(x) (x)
 
