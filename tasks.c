@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <assert.h>
-#include "all_tasks.h"
+
+#ifndef GEN
+#include "stage1_tasks.h"
+#include "stage2_tasks.h"
+#endif
 
 #define DEBUG 1
 
@@ -9,6 +13,8 @@
 #else
 #define debugf(...)
 #endif
+
+DTASK_GROUP(stage1_tasks)
 
 DTASK_ENABLE(fizzbuzz) {
   printf("fizzbuzz enabled\n");
@@ -177,5 +183,12 @@ DTASK(mod_seven, int) {
 
 DTASK(count, int) {
   count++;
+  return true;
+}
+
+DTASK_GROUP(stage2_tasks)
+
+DTASK(toggle, bool) {
+  toggle = !toggle;
   return true;
 }

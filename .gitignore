@@ -1,5 +1,5 @@
 *~
 *.o
-all_tasks.h
+*_tasks.h
 test
 *.pyc

@@ -38,7 +38,7 @@ struct dtask_state
 #endif
 };
 
-void dtask_run(const dtask_state_t *state, dtask_set_t initial);
+dtask_set_t dtask_run(const dtask_state_t *state, dtask_set_t initial);
 void dtask_enable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
 void dtask_switch(dtask_state_t *state, dtask_set_t set);
@@ -51,6 +51,8 @@ void __dtask_noop();
 #define DTASK(name, ...)  \
   name##_t name;          \
   bool __dtask_##name(dtask_set_t events)
+
+#define DTASK_GROUP(group_name)
 
 #define DTASK_ENABLE(name)  \
   void __dtask_enable_##name()

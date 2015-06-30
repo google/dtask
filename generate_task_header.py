@@ -12,6 +12,7 @@ options = None
 dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,\s*(.+)\s*\)')
 dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
 dtask_enable_or_disable_re = re.compile(r'DTASK_(EN|DIS)ABLE\(\s*(\w+)\s*\)')
+dtask_group_re = re.compile(r'DTASK_GROUP\(\s*(\w+)\s*\)')
 
 
 def init_task(tasks, name):
@@ -28,41 +29,52 @@ def init_task(tasks, name):
 
 
 def find_tasks_in_file(filename):
+    in_group = False
     tasks = {}
 
     last_task = None
     includes = ['-I' + i for i in options.include_dirs]
     macros = ['-D' + d for d in options.macros]
-    cpp = subprocess.Popen(['cpp', '-DGENERATING_TASK_HEADER'] + includes + macros + [filename],
+    cpp = subprocess.Popen(['cpp', '-DGEN'] +
+                           includes + macros + [filename],
                            stdout=subprocess.PIPE)
     lines = iter(cpp.stdout.readline, '')
     for line in lines:
         if line[0] != '#':
 
-            #match DTASK(...) definitions
-            match = dtask_re.search(line)
+            #match DTASK_GROUP(...) definitions
+            match = dtask_group_re.search(line)
             if match:
-                name = match.group(1)
-                type = match.group(2)
-                init_task(tasks, name)
-                tasks[name]['type'] = type
-                last_task = tasks[name]
+                group = match.group(1)
+                in_group = group == options.target
+                last_task = None
 
-            #match DTASK_(EN|DIS)ABLE(...) definitions
-            match = dtask_enable_or_disable_re.search(line)
-            if match:
-                name = match.group(2)
-                if match.group(1) == 'EN':
-                    init_task(tasks, name)
-                    tasks[name]['en'] = True
-                elif match.group(1) == 'DIS':
-                    init_task(tasks, name)
-                    tasks[name]['dis'] = True
+            if in_group:
 
-            #match DGET(...) expressions
-            for match in dget_re.finditer(line):
+                #match DTASK(...) definitions
+                match = dtask_re.search(line)
                 if match:
-                    last_task['deps'].add(match.group(1))
+                    name = match.group(1)
+                    type = match.group(2)
+                    init_task(tasks, name)
+                    tasks[name]['type'] = type
+                    last_task = tasks[name]
+
+                #match DTASK_(EN|DIS)ABLE(...) definitions
+                match = dtask_enable_or_disable_re.search(line)
+                if match:
+                    name = match.group(2)
+                    if match.group(1) == 'EN':
+                        init_task(tasks, name)
+                        tasks[name]['en'] = True
+                    elif match.group(1) == 'DIS':
+                        init_task(tasks, name)
+                        tasks[name]['dis'] = True
+
+                #match DGET(...) expressions
+                for match in dget_re.finditer(line):
+                    if match:
+                        last_task['deps'].add(match.group(1))
     return tasks
 
 
@@ -187,7 +199,7 @@ static const dtask_t {}[{}] = {{
         #prologue
         f.write('''
 #pragma GCC diagnostic ignored "-Wunused-function"
-static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
+static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
   const dtask_set_t enabled = state->enabled_dependencies;
   dtask_set_t
     scheduled = initial & enabled,
@@ -209,7 +221,7 @@ static void {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
 
         #epilogue
         f.write('''
-  return;
+  return events;
 }
 ''')
         f.write('\n#endif\n')
