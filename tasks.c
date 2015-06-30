@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#ifndef GEN
+#ifndef DTASK_GEN
 #include "stage1_tasks.h"
 #include "stage2_tasks.h"
 #endif

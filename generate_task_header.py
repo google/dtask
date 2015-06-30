@@ -35,7 +35,7 @@ def find_tasks_in_file(filename):
     last_task = None
     includes = ['-I' + i for i in options.include_dirs]
     macros = ['-D' + d for d in options.macros]
-    cpp = subprocess.Popen(['cpp', '-DGEN'] +
+    cpp = subprocess.Popen(['cpp', '-DDTASK_GEN'] +
                            includes + macros + [filename],
                            stdout=subprocess.PIPE)
     lines = iter(cpp.stdout.readline, '')

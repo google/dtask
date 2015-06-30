@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 // #define ALL_TASKS_AFTER_TASK_HOOK printf("hook\n")
-#ifndef GEN
+#ifndef DTASK_GEN
 #include "stage1_tasks.h"
 #include "stage2_tasks.h"
 #endif
