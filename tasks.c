@@ -23,15 +23,21 @@ DTASK_DISABLE(fizzbuzz) {
   printf("fizzbuzz disabled\n");
 }
 DTASK(fizzbuzz, int) {
-  int x = DGET(count);
-  (void)DGET(mod_three);
-  (void)DGET(mod_five);
-  if(DTASK_AND(MOD_THREE | MOD_FIVE)) {
-    printf("fizzbuzz\n");
-  } else if(events & MOD_THREE) {
-    printf("fizz\n");
-  } else if(events & MOD_FIVE) {
-    printf("buzz\n");
+  int x = *DREF(count);
+  (void)DREF(mod_three);
+  (void)DREF(mod_five);
+  (void)DREF_WEAK(mod_seven);
+  if(DTASK_OR(MOD_THREE | MOD_FIVE | MOD_SEVEN)) {
+    if(events & MOD_THREE) {
+      printf("fizz");
+    }
+    if(events & MOD_FIVE) {
+      printf("buzz");
+    }
+    if(events & MOD_SEVEN) {
+      printf("woof");
+    }
+    printf("\n");
   } else {
     printf("%d\n", x);
   }
@@ -45,7 +51,7 @@ DTASK_DISABLE(output35) {
   printf("output35 disabled\n");
 }
 DTASK(output35, int) {
-  const combine35_t *x = &DGET(combine35);
+  const combine35_t *x = DREF(combine35);
   assert(x->m3 * 3 == x->m5 * 5);
   debugf("\n");
   printf("%d * 3 == %d * 5 == %d\n", x->m3, x->m5, x->m3 * 3);
@@ -60,7 +66,7 @@ DTASK_DISABLE(output57) {
   printf("output57 disabled\n");
 }
 DTASK(output57, int) {
-  const combine57_t *x = &DGET(combine57);
+  const combine57_t *x = DREF(combine57);
   assert(x->m5 * 5 == x->m7 * 7);
   debugf("\n");
   printf("%d * 5 == %d * 7 == %d\n", x->m5, x->m7, x->m5 * 5);
@@ -75,7 +81,7 @@ DTASK_DISABLE(output357) {
   printf("output357 disabled\n");
 }
 DTASK(output357, int) {
-  const combine357_t *x = &DGET(combine357);
+  const combine357_t *x = DREF(combine357);
   assert(x->m3 * 3 == x->m5 * 5 && x->m5 * 5 == x->m7 * 7);
   debugf("\n");
   printf("%d * 3 == %d * 5 == %d * 7 == %d\n", x->m3, x->m5, x->m7, x->m3 * 3);
@@ -90,8 +96,8 @@ DTASK_DISABLE(combine357) {
   printf("combine357 disabled\n");
 }
 DTASK(combine357, struct { int m3, m5, m7; }) {
-  const combine35_t *m35 = &DGET(combine35);
-  int m7 = DGET(mod_seven);
+  const combine35_t *m35 = DREF(combine35);
+  int m7 = *DREF(mod_seven);
   if(DTASK_AND(COMBINE35 | MOD_SEVEN)) {
     combine357.m3 = m35->m3;
     combine357.m5 = m35->m5;
@@ -109,8 +115,8 @@ DTASK_DISABLE(combine35) {
   printf("combine35 disabled\n");
 }
 DTASK(combine35, struct { int m3, m5; }) {
-  int m3 = DGET(mod_three);
-  int m5 = DGET(mod_five);
+  int m3 = *DREF(mod_three);
+  int m5 = *DREF(mod_five);
   if(DTASK_AND(MOD_THREE | MOD_FIVE)) {
     combine35.m3 = m3;
     combine35.m5 = m5;
@@ -127,8 +133,8 @@ DTASK_DISABLE(combine57) {
   printf("combine57 disabled\n");
 }
 DTASK(combine57, struct { int m5, m7; }) {
-  int m5 = DGET(mod_five);
-  int m7 = DGET(mod_seven);
+  int m5 = *DREF(mod_five);
+  int m7 = *DREF(mod_seven);
   if(DTASK_AND(MOD_FIVE | MOD_SEVEN)) {
     combine57.m5 = m5;
     combine57.m7 = m7;
@@ -146,7 +152,7 @@ DTASK_DISABLE(mod_three) {
   printf("mod_three disabled\n");
 }
 DTASK(mod_three, int) {
-  int x = DGET(count);
+  int x = *DREF(count);
   if(x % 3 != 0) return false;
   mod_three = x / 3;
   debugf("[3] ");
@@ -160,7 +166,7 @@ DTASK_DISABLE(mod_five) {
   printf("mod_five disabled\n");
 }
 DTASK(mod_five, int) {
-  int x = DGET(count);
+  int x = *DREF(count);
   if(x % 5 != 0) return false;
   mod_five = x / 5;
   debugf("[5] ");
@@ -174,7 +180,7 @@ DTASK_DISABLE(mod_seven) {
   printf("mod_seven disabled\n");
 }
 DTASK(mod_seven, int) {
-  int x = DGET(count);
+  int x = *DREF(count);
   if(x % 7 != 0) return false;
   mod_seven = x / 7;
   debugf("[7] ");

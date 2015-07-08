@@ -10,7 +10,7 @@ import argparse
 BITS_IN_DTASK_SET_T = 32
 options = None
 dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,\s*(.+)\s*\)')
-dget_re = re.compile(r'DGET\(\s*(\w+)\s*\)')
+dget_re = re.compile(r'DREF(_WEAK)?\(\s*(\w+)\s*\)')
 dtask_enable_or_disable_re = re.compile(r'DTASK_(EN|DIS)ABLE\(\s*(\w+)\s*\)')
 dtask_group_re = re.compile(r'DTASK_GROUP\(\s*(\w+)\s*\)')
 
@@ -20,6 +20,7 @@ def init_task(tasks, name):
         tasks[name] = {
             'type': 'int',
             'deps': set(),
+            'weak_deps': set(),
             'depnts': set(),
             'all_deps': set(),
             'all_depnts': set(),
@@ -71,10 +72,14 @@ def find_tasks_in_file(filename):
                         init_task(tasks, name)
                         tasks[name]['dis'] = True
 
-                #match DGET(...) expressions
+                #match DREF(...) expressions
                 for match in dget_re.finditer(line):
                     if match:
-                        last_task['deps'].add(match.group(1))
+                        if match.group(1):
+                            # weak dependency
+                            last_task['weak_deps'].add(match.group(2))
+                        else:
+                            last_task['deps'].add(match.group(2))
     return tasks
 
 
@@ -84,6 +89,8 @@ def order_tasks(tasks):
     #calculate dependents
     for name in sorted:
         for d in tasks[name]['deps']:
+            tasks[d]['depnts'].add(name)
+        for d in tasks[name]['weak_deps']:
             tasks[d]['depnts'].add(name)
 
     #calculate dependencies transitively

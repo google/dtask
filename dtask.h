@@ -46,7 +46,8 @@ void __dtask_noop();
 
 #ifndef DTASK_GEN
 
-#define DGET(x) (x)
+#define DREF(x) (const __typeof__(x) *)&(x)
+#define DREF_WEAK(x) DREF(x)
 
 #define DTASK(name, ...)  \
   name##_t name;          \

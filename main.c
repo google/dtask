@@ -55,6 +55,16 @@ int main() {
     dtask_run(&state1, COUNT);
   }
 
+  printf("\n\n_____ FIZZBUZZWOOF _____\n");
+  dtask_switch(&state1, FIZZBUZZ | MOD_SEVEN);
+  count = 0;
+  for(int i = 0; i <= 110; i++) {
+    dtask_run(&state1, COUNT);
+  }
+
+  printf("\n\n_____ disable FIZZBUZZ _____\n");
+  dtask_disable(&state1, FIZZBUZZ);
+
   printf("\n\n_____ THE END _____\n\n");
 
   return 0;
