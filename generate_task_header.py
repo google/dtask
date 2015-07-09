@@ -84,7 +84,8 @@ def find_tasks_in_file(filename):
 
 
 def order_tasks(tasks):
-    sorted = toposort_flatten({k: v['deps'] for (k, v) in tasks.iteritems()})
+    sorted = toposort_flatten({k: v['deps'] | v['weak_deps']
+                               for (k, v) in tasks.iteritems()})
 
     #calculate dependents
     for name in sorted:
@@ -217,14 +218,16 @@ static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial) {
         for (task, dict) in tasks:
             f.write('''
   if(({uptask} & scheduled) && __dtask_{task}(events)) {{
-    events |= {uptask};
-    scheduled |= ({depnts}) & enabled;
-  }}
-'''
-                    .format(task=task,
-                            uptask=task.upper(),
-                            depnts=show_set(dict['depnts']),
-                            upname=name.upper()))
+    events |= {uptask};'''.format(task=task,
+                                  uptask=task.upper()))
+            if dict['depnts']:
+                f.write('''
+    scheduled |= ({depnts}) & enabled;'''
+                        .format(depnts=show_set(dict['depnts'])))
+
+            f.write('''
+  }
+''')
 
         #epilogue
         f.write('''
