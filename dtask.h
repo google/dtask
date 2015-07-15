@@ -32,7 +32,12 @@ struct dtask_state
 {
   const dtask_t *tasks;
   const dtask_id_t num_tasks;
-  dtask_set_t enabled, enabled_dependencies;
+  dtask_set_t
+    enabled,
+    disabled,
+    enabled_dependencies,
+    disabled_dependents,
+    selected;
 #ifdef NO_CLZ
   dtask_set_t (*run)(const dtask_state_t *state, dtask_set_t initial);
 #endif
@@ -79,9 +84,9 @@ void __dtask_noop();
 #define DTASK_LENGTH(a) (sizeof(a) / sizeof((a)[0]))
 
 #ifndef NO_CLZ
-#define DTASK_INITIAL_STATE(name) {(name), DTASK_LENGTH(name), 0, 0}
+#define DTASK_INITIAL_STATE(name) {(name), DTASK_LENGTH(name), 0, 0, 0, 0, 0}
 #else
-#define DTASK_INITIAL_STATE(name) {(name), DTASK_LENGTH(name), 0, 0, name##_run}
+#define DTASK_INITIAL_STATE(name) {(name), DTASK_LENGTH(name), 0, 0, 0, 0, 0, name##_run}
 #endif
 
 #define DTASK_BIT_WIDTH(type) (sizeof(type) * 8)

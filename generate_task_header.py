@@ -160,6 +160,11 @@ def generate_header():
             id = id + 1
         f.write('#define {}_COUNT {:d}\n'.format(name.upper(), id))
 
+        f.write('\n#define {}_TASK_NAMES {{ \\\n'.format(name.upper()))
+        for (task, _) in tasks:
+            f.write('  "{}", \\\n'.format(task))
+        f.write('}\n')
+
         #initial
         initial = set()
         for (task, dict) in tasks:
@@ -208,9 +213,9 @@ static const dtask_t {}[{}] = {{
         f.write('''
 #pragma GCC diagnostic ignored "-Wunused-function"
 static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
-  const dtask_set_t enabled = state->enabled_dependencies;
+  const dtask_set_t selected = state->selected;
   dtask_set_t
-    scheduled = initial & enabled,
+    scheduled = initial & selected,
     events = 0;
 '''.format(name=name))
 
@@ -222,7 +227,7 @@ static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial) {
                                   uptask=task.upper()))
             if dict['depnts']:
                 f.write('''
-    scheduled |= ({depnts}) & enabled;'''
+    scheduled |= ({depnts}) & selected;'''
                         .format(depnts=show_set(dict['depnts'])))
 
             f.write('''

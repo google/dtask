@@ -41,6 +41,12 @@ int main() {
     dtask_run(&state1, COUNT);
   }
 
+  printf("\n\n_____ enabling MOD_SEVEN _____\n");
+  dtask_enable(&state1, MOD_SEVEN);
+  for(int i = 0; i < 100; i++) {
+    dtask_run(&state1, COUNT);
+  }
+
   printf("\n\n_____ disabling OUTPUT35 _____\n");
   dtask_switch(&state1, OUTPUT35 | OUTPUT57);
   dtask_disable(&state1, OUTPUT35);
