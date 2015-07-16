@@ -41,8 +41,8 @@ int main() {
     dtask_run(&state1, COUNT);
   }
 
-  printf("\n\n_____ enabling MOD_SEVEN _____\n");
-  dtask_enable(&state1, MOD_SEVEN);
+  printf("\n\n_____ clearing MOD_SEVEN _____\n");
+  dtask_clear(&state1, MOD_SEVEN);
   for(int i = 0; i < 100; i++) {
     dtask_run(&state1, COUNT);
   }
@@ -68,8 +68,8 @@ int main() {
     dtask_run(&state1, COUNT);
   }
 
-  printf("\n\n_____ disable FIZZBUZZ _____\n");
-  dtask_disable(&state1, FIZZBUZZ);
+  printf("\n\n_____ clearing FIZZBUZZ _____\n");
+  dtask_clear(&state1, FIZZBUZZ);
 
   printf("\n\n_____ THE END _____\n\n");
 

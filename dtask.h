@@ -46,6 +46,7 @@ struct dtask_state
 dtask_set_t dtask_run(const dtask_state_t *state, dtask_set_t initial);
 void dtask_enable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
+void dtask_clear(dtask_state_t *state, dtask_set_t set);
 void dtask_switch(dtask_state_t *state, dtask_set_t set);
 void __dtask_noop();
 
