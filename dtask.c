@@ -103,9 +103,11 @@ void dtask_enable(dtask_state_t *state, dtask_set_t set)
   dtask_update_enabled_dependencies(state, set);
 
   // clear conflicting disables and recompute
-  state->disabled &= ~state->enabled_dependencies;
-  state->disabled_dependents = 0;
-  dtask_update_disabled_dependents(state, state->disabled);
+  if(state->disabled & state->enabled_dependencies) {
+    state->disabled &= ~state->enabled_dependencies;
+    state->disabled_dependents = 0;
+    dtask_update_disabled_dependents(state, state->disabled);
+  }
 
   // update selected and call enable functions
   state->selected = state->enabled_dependencies & ~state->disabled_dependents;
@@ -118,9 +120,11 @@ void dtask_disable(dtask_state_t *state, dtask_set_t set)
   dtask_update_disabled_dependents(state, set);
 
   // clear directly conflicting enables and recompute
-  state->enabled &= ~set;
-  state->enabled_dependencies = 0;
-  dtask_update_enabled_dependencies(state, state->enabled);
+  if(state->enabled & set) {
+    state->enabled &= ~set;
+    state->enabled_dependencies = 0;
+    dtask_update_enabled_dependencies(state, state->enabled);
+  }
 
   // update selected and call disable functions
   state->selected = state->enabled_dependencies & ~state->disabled_dependents;
