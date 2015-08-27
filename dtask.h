@@ -19,8 +19,8 @@ struct dtask
 #ifndef NO_CLZ
   bool (*func)(dtask_set_t events);
 #endif
-  void (*enable_func)();
-  void (*disable_func)();
+  void (*enable_func)(void);
+  void (*disable_func)(void);
 #ifndef NO_CLZ
   dtask_set_t dependents;
 #endif
@@ -48,7 +48,7 @@ void dtask_enable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
 void dtask_clear(dtask_state_t *state, dtask_set_t set);
 void dtask_switch(dtask_state_t *state, dtask_set_t set);
-void __dtask_noop();
+void __dtask_noop(void);
 
 #ifndef DTASK_GEN
 
@@ -62,10 +62,10 @@ void __dtask_noop();
 #define DTASK_GROUP(group_name)
 
 #define DTASK_ENABLE(name)  \
-  void __dtask_enable_##name()
+  void __dtask_enable_##name(void)
 
 #define DTASK_DISABLE(name)  \
-  void __dtask_disable_##name()
+  void __dtask_disable_##name(void)
 
 #endif
 
@@ -75,10 +75,10 @@ void __dtask_noop();
   bool __dtask_##name(dtask_set_t events)
 
 #define DECLARE_DTASK_ENABLE(name) \
-  void __dtask_enable_##name()
+  void __dtask_enable_##name(void)
 
 #define DECLARE_DTASK_DISABLE(name) \
-  void __dtask_disable_##name()
+  void __dtask_disable_##name(void)
 
 #define DTASK_AND(x) (!(~events & (x)))
 #define DTASK_OR(x) (events & (x))
