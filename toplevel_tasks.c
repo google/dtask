@@ -38,5 +38,7 @@ DTASK(simple_events, dtask_set_t)
   dtask_set_t initial = TOGGLE;
 
   simple_events = dtask_run(&simple, initial, events);
-  return simple_events != 0;
+
+  /* TOGGLE2 is the only 'exported' event */
+  return (simple_events & TOGGLE2) != 0;
 }
