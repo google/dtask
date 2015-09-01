@@ -17,7 +17,7 @@ typedef struct dtask dtask_t;
 struct dtask
 {
 #ifndef NO_CLZ
-  bool (*func)(dtask_set_t events);
+  bool (*func)(dtask_set_t events, dtask_set_t parent_events);
 #endif
   void (*enable_func)(void);
   void (*disable_func)(void);
@@ -39,11 +39,11 @@ struct dtask_state
     disabled_dependents,
     selected;
 #ifdef NO_CLZ
-  dtask_set_t (*run)(const dtask_state_t *state, dtask_set_t initial);
+  dtask_set_t (*run)(const dtask_state_t *state, dtask_set_t initial, dtask_set_t parent_events);
 #endif
 };
 
-dtask_set_t dtask_run(const dtask_state_t *state, dtask_set_t initial);
+dtask_set_t dtask_run(const dtask_state_t *state, dtask_set_t initial, dtask_set_t parent_events);
 void dtask_enable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
 void dtask_clear(dtask_state_t *state, dtask_set_t set);
@@ -57,7 +57,7 @@ void __dtask_noop(void);
 
 #define DTASK(name, ...)  \
   name##_t name;          \
-  bool __dtask_##name(dtask_set_t events)
+  bool __dtask_##name(dtask_set_t events, dtask_set_t parent_events)
 
 #define DTASK_GROUP(group_name)
 
@@ -72,7 +72,7 @@ void __dtask_noop(void);
 #define DECLARE_DTASK(name, type...) \
   typedef type name##_t;             \
   extern name##_t name;              \
-  bool __dtask_##name(dtask_set_t events)
+  bool __dtask_##name(dtask_set_t events, dtask_set_t parent_events)
 
 #define DECLARE_DTASK_ENABLE(name) \
   void __dtask_enable_##name(void)

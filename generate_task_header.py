@@ -212,7 +212,7 @@ static const dtask_t {}[{}] = {{
         #prologue
         f.write('''
 #pragma GCC diagnostic ignored "-Wunused-function"
-static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial) {{
+static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial, dtask_set_t parent_events) {{
   const dtask_set_t selected = state->selected;
   dtask_set_t
     scheduled = initial & selected,
@@ -222,7 +222,7 @@ static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial) {
         #dispatch code
         for (task, dict) in tasks:
             f.write('''
-  if(({uptask} & scheduled) && __dtask_{task}(events)) {{
+  if(({uptask} & scheduled) && __dtask_{task}(events, parent_events)) {{
     events |= {uptask};'''.format(task=task,
                                   uptask=task.upper()))
             if dict['depnts']:

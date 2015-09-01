@@ -1,5 +1,5 @@
 SRC := $(wildcard *.c)
-DTASK_TARGETS := stage1_tasks stage2_tasks
+DTASK_TARGETS := toplevel_tasks factor_tasks simple_tasks
 DTASK_HEADERS := $(patsubst %, %.h, $(DTASK_TARGETS))
 HEADERS := $(wildcard *.h) $(DTASK_HEADERS)
 OBJS := $(patsubst %.c, %.o, $(SRC))
