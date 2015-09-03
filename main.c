@@ -7,78 +7,78 @@
 #include "simple_tasks.h"
 #endif
 
-dtask_state_t toplevel = DTASK_INITIAL_STATE(toplevel_tasks);
-dtask_state_t factor = DTASK_INITIAL_STATE(factor_tasks);
-dtask_state_t simple = DTASK_INITIAL_STATE(simple_tasks);
+dtask_config_t toplevel_config = DTASK_INITIAL_CONFIG(toplevel_tasks);
+dtask_config_t factor_config = DTASK_INITIAL_CONFIG(factor_tasks);
+dtask_config_t simple_config = DTASK_INITIAL_CONFIG(simple_tasks);
 
-toplevel_tasks_data_t toplevel_data;
-factor_tasks_data_t factor_data;
-simple_tasks_data_t simple_data;
+toplevel_tasks_state_t toplevel_state;
+factor_tasks_state_t factor_state;
+simple_tasks_state_t simple_state;
 
 int main() {
 
-  dtask_enable(&toplevel, FACTOR_EVENTS | SIMPLE_EVENTS);
-  dtask_enable(&simple, TOGGLE | TOGGLE2);
+  dtask_enable(&toplevel_config, FACTOR_EVENTS | SIMPLE_EVENTS);
+  dtask_enable(&simple_config, TOGGLE | TOGGLE2);
 
-  factor_data.count = -1;
+  factor_state.count = -1;
 
   printf("\n\n_____ OUTPUT35 _____\n");
-  dtask_switch(&factor, OUTPUT35);
+  dtask_switch(&factor_config, OUTPUT35);
 
   for(int i = 0; i < 100; i++) {
-    dtask_run(&toplevel, &toplevel_data, SIMPLE_EVENTS, 0);
+    dtask_run(&toplevel_config, &toplevel_state, SIMPLE_EVENTS, 0);
   }
 
   printf("\n\n_____ OUTPUT57 _____\n");
-  dtask_switch(&factor, OUTPUT57);
+  dtask_switch(&factor_config, OUTPUT57);
 
   for(int i = 0; i < 100; i++) {
-    dtask_run(&toplevel, &toplevel_data, SIMPLE_EVENTS, 0);
+    dtask_run(&toplevel_config, &toplevel_state, SIMPLE_EVENTS, 0);
   }
 
   printf("\n\n_____ OUTPUT357 _____\n");
-  dtask_switch(&factor, OUTPUT357);
+  dtask_switch(&factor_config, OUTPUT357);
 
   for(int i = 0; i < 500; i++) {
-    dtask_run(&toplevel, &toplevel_data, SIMPLE_EVENTS, 0);
+    dtask_run(&toplevel_config, &toplevel_state, SIMPLE_EVENTS, 0);
   }
 
   printf("\n\n_____ disabling MOD_SEVEN _____\n");
-  dtask_switch(&factor, OUTPUT35 | OUTPUT57);
-  dtask_disable(&factor, MOD_SEVEN);
+  dtask_switch(&factor_config, OUTPUT35 | OUTPUT57);
+  dtask_disable(&factor_config, MOD_SEVEN);
   for(int i = 0; i < 100; i++) {
-    dtask_run(&toplevel, &toplevel_data, SIMPLE_EVENTS, 0);
+    dtask_run(&toplevel_config, &toplevel_state, SIMPLE_EVENTS, 0);
   }
 
   printf("\n\n_____ clearing MOD_SEVEN _____\n");
-  dtask_clear(&factor, MOD_SEVEN);
+  dtask_clear(&factor_config, MOD_SEVEN);
   for(int i = 0; i < 100; i++) {
-    dtask_run(&toplevel, &toplevel_data, SIMPLE_EVENTS, 0);
+    dtask_run(&toplevel_config, &toplevel_state, SIMPLE_EVENTS, 0);
   }
 
   printf("\n\n_____ disabling OUTPUT35 _____\n");
-  dtask_switch(&factor, OUTPUT35 | OUTPUT57);
-  dtask_disable(&factor, OUTPUT35);
+  dtask_switch(&factor_config, OUTPUT35 | OUTPUT57);
+  dtask_disable(&factor_config, OUTPUT35);
   for(int i = 0; i < 100; i++) {
-    dtask_run(&toplevel, &toplevel_data, SIMPLE_EVENTS, 0);
+    dtask_run(&toplevel_config, &toplevel_state, SIMPLE_EVENTS, 0);
   }
 
   printf("\n\n_____ FIZZBUZZ _____\n");
-  dtask_switch(&factor, FIZZBUZZ);
-  factor_data.count = 0;
+  dtask_switch(&factor_config, FIZZBUZZ);
+  factor_state.count = 0;
   for(int i = 0; i <= 100; i++) {
-    dtask_run(&toplevel, &toplevel_data, SIMPLE_EVENTS, 0);
+    dtask_run(&toplevel_config, &toplevel_state, SIMPLE_EVENTS, 0);
   }
 
   printf("\n\n_____ FIZZBUZZWOOF _____\n");
-  dtask_switch(&factor, FIZZBUZZ | MOD_SEVEN);
-  factor_data.count = 0;
+  dtask_switch(&factor_config, FIZZBUZZ | MOD_SEVEN);
+  factor_state.count = 0;
   for(int i = 0; i <= 110; i++) {
-    dtask_run(&toplevel, &toplevel_data, SIMPLE_EVENTS, 0);
+    dtask_run(&toplevel_config, &toplevel_state, SIMPLE_EVENTS, 0);
   }
 
   printf("\n\n_____ clearing FIZZBUZZ _____\n");
-  dtask_clear(&factor, FIZZBUZZ);
+  dtask_clear(&factor_config, FIZZBUZZ);
 
   printf("\n\n_____ THE END _____\n\n");
 

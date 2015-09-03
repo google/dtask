@@ -17,8 +17,8 @@
 
 DTASK_GROUP(toplevel_tasks)
 
-extern dtask_state_t factor;
-extern factor_tasks_data_t factor_data;
+extern dtask_config_t factor_config;
+extern factor_tasks_state_t factor_state;
 DTASK(factor_events, dtask_set_t)
 {
   /* connect factor_tasks to simple_tasks */
@@ -29,17 +29,17 @@ DTASK(factor_events, dtask_set_t)
     initial |= COUNT;
   }
 
-  *DREF(factor_events) = dtask_run(&factor, &factor_data, initial, events);
+  *DREF(factor_events) = dtask_run(&factor_config, &factor_state, initial, events);
   return *DREF(factor_events) != 0;
 }
 
-extern dtask_state_t simple;
-extern simple_tasks_data_t simple_data;
+extern dtask_config_t simple_config;
+extern simple_tasks_state_t simple_state;
 DTASK(simple_events, dtask_set_t)
 {
   dtask_set_t initial = TOGGLE;
 
-  *DREF(simple_events) = dtask_run(&simple, &simple_data, initial, events);
+  *DREF(simple_events) = dtask_run(&simple_config, &simple_state, initial, events);
 
   /* TOGGLE2 is the only 'exported' event */
   return (*DREF(simple_events) & TOGGLE2) != 0;

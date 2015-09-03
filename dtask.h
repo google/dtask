@@ -17,7 +17,7 @@ typedef struct dtask dtask_t;
 struct dtask
 {
 #ifndef NO_CLZ
-  bool (*func)(void *data, dtask_set_t events, dtask_set_t parent_events);
+  bool (*func)(void *state, dtask_set_t events, dtask_set_t parent_events);
 #endif
   void (*enable_func)(void);
   void (*disable_func)(void);
@@ -27,8 +27,8 @@ struct dtask
   dtask_set_t all_dependencies, all_dependents;
 };
 
-typedef struct dtask_state dtask_state_t;
-struct dtask_state
+typedef struct dtask_config dtask_config_t;
+struct dtask_config
 {
   const dtask_t *tasks;
   const dtask_id_t num_tasks;
@@ -39,21 +39,21 @@ struct dtask_state
     disabled_dependents,
     selected;
 #ifdef NO_CLZ
-  dtask_set_t (*run)(const dtask_state_t *state, void *data, dtask_set_t initial, dtask_set_t parent_events);
+  dtask_set_t (*run)(const dtask_config_t *config, void *state, dtask_set_t initial, dtask_set_t parent_events);
 #endif
 };
 
-dtask_set_t dtask_run(const dtask_state_t *state, void *data, dtask_set_t initial, dtask_set_t parent_events);
-void dtask_enable(dtask_state_t *state, dtask_set_t set);
-void dtask_disable(dtask_state_t *state, dtask_set_t set);
-void dtask_clear(dtask_state_t *state, dtask_set_t set);
-void dtask_switch(dtask_state_t *state, dtask_set_t set);
+dtask_set_t dtask_run(const dtask_config_t *config, void *state, dtask_set_t initial, dtask_set_t parent_events);
+void dtask_enable(dtask_config_t *config, dtask_set_t set);
+void dtask_disable(dtask_config_t *config, dtask_set_t set);
+void dtask_clear(dtask_config_t *config, dtask_set_t set);
+void dtask_switch(dtask_config_t *config, dtask_set_t set);
 void __dtask_noop(void);
 
 #ifndef DTASK_GEN
 
 #define DTASK(name, ...)  \
-  bool __dtask_##name(void *data, dtask_set_t events, dtask_set_t parent_events)
+  bool __dtask_##name(void *state, dtask_set_t events, dtask_set_t parent_events)
 
 #define DTASK_GROUP(group_name)
 
@@ -67,7 +67,7 @@ void __dtask_noop(void);
 
 #define DECLARE_DTASK(name, type...) \
   typedef type name##_t;             \
-  bool __dtask_##name(void *data, dtask_set_t events, dtask_set_t parent_events)
+  bool __dtask_##name(void *state, dtask_set_t events, dtask_set_t parent_events)
 
 #define DECLARE_DTASK_ENABLE(name) \
   void __dtask_enable_##name(void)
@@ -80,9 +80,9 @@ void __dtask_noop(void);
 #define DTASK_LENGTH(a) (sizeof(a) / sizeof((a)[0]))
 
 #ifndef NO_CLZ
-#define DTASK_INITIAL_STATE(name) {(name), DTASK_LENGTH(name), 0, 0, 0, 0, 0}
+#define DTASK_INITIAL_CONFIG(name) {(name), DTASK_LENGTH(name), 0, 0, 0, 0, 0}
 #else
-#define DTASK_INITIAL_STATE(name) {(name), DTASK_LENGTH(name), 0, 0, 0, 0, 0, name##_run}
+#define DTASK_INITIAL_CONFIG(name) {(name), DTASK_LENGTH(name), 0, 0, 0, 0, 0, name##_run}
 #endif
 
 #define DTASK_BIT_WIDTH(type) (sizeof(type) * 8)
