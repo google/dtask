@@ -174,6 +174,12 @@ def generate_header():
         f.write('\n#define {}_INITIAL ({})\n\n'.format(name.upper(),
                                                        show_set(initial)))
 
+        #declare type
+        f.write('typedef struct {}_data_s {{\n'.format(name))
+        for (task, dict) in tasks:
+            f.write('  {} {};\n'.format(dict['type'], task))
+        f.write('}} {}_data_t;\n\n'.format(name))
+
         #declare tasks
         for (task, dict) in tasks:
             f.write('DECLARE_DTASK({}, {});\n'.format(task, dict['type']))
@@ -212,7 +218,7 @@ static const dtask_t {}[{}] = {{
         #prologue
         f.write('''
 #pragma GCC diagnostic ignored "-Wunused-function"
-static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial, dtask_set_t parent_events) {{
+static dtask_set_t {name}_run(const dtask_state_t *state, void *data, dtask_set_t initial, dtask_set_t parent_events) {{
   const dtask_set_t selected = state->selected;
   dtask_set_t
     scheduled = initial & selected,
@@ -222,7 +228,7 @@ static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial, d
         #dispatch code
         for (task, dict) in tasks:
             f.write('''
-  if(({uptask} & scheduled) && __dtask_{task}(events, parent_events)) {{
+    if(({uptask} & scheduled) && __dtask_{task}(data, events, parent_events)) {{
     events |= {uptask};'''.format(task=task,
                                   uptask=task.upper()))
             if dict['depnts']:
@@ -240,6 +246,13 @@ static dtask_set_t {name}_run(const dtask_state_t *state, dtask_set_t initial, d
 }
 ''')
         f.write('\n#endif\n')
+
+        f.write('''
+#ifndef DREF
+#define DREF(x) ((x##_t *)&(({}_data_t *)data)->x)
+#define DREF_WEAK(x) DREF(x)
+#endif
+'''.format(name))
 
         f.write('''
 #endif

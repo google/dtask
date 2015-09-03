@@ -173,7 +173,7 @@ void dtask_switch(dtask_state_t *state, dtask_set_t set) {
 }
 
 #ifndef NO_CLZ
-dtask_set_t dtask_run(const dtask_state_t *state, dtask_set_t initial, dtask_set_t parent_events) {
+dtask_set_t dtask_run(const dtask_state_t *state, void *data, dtask_set_t initial, dtask_set_t parent_events) {
   const dtask_set_t selected = state->selected;
   dtask_set_t
     scheduled = initial & selected,
@@ -185,7 +185,7 @@ dtask_set_t dtask_run(const dtask_state_t *state, dtask_set_t initial, dtask_set
     const dtask_set_t id_bit = dtask_bit(active);
     const dtask_t *task = &state->tasks[active];
     if((id_bit & scheduled) &&
-       task->func(events, parent_events)) {
+       task->func(data, events, parent_events)) {
       events |= id_bit;
       scheduled |= task->dependents & selected;
     }
@@ -194,7 +194,7 @@ dtask_set_t dtask_run(const dtask_state_t *state, dtask_set_t initial, dtask_set
   return events;
 }
 #else
-dtask_set_t dtask_run(const dtask_state_t *state, dtask_set_t initial, dtask_set_t parent_events) {
-  return state->run(state, initial, parent_events);
+dtask_set_t dtask_run(const dtask_state_t *state, void *data, dtask_set_t initial, dtask_set_t parent_events) {
+  return state->run(state, data, initial, parent_events);
 }
 #endif

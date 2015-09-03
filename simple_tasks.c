@@ -16,13 +16,13 @@
 DTASK_GROUP(simple_tasks)
 
 DTASK(toggle, bool) {
-  toggle = !toggle;
+  *DREF(toggle) = !*DREF(toggle);
   return true;
 }
 
 DTASK(toggle2, bool) {
   if(*DREF(toggle)) {
-    toggle2 = !toggle2;
+    *DREF(toggle2) = !*DREF(toggle2);
     return true;
   }
   return false;

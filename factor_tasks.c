@@ -98,9 +98,9 @@ DTASK(combine357, struct { int m3, m5, m7; }) {
   const combine35_t *m35 = DREF(combine35);
   int m7 = *DREF(mod_seven);
   if(DTASK_AND(COMBINE35 | MOD_SEVEN)) {
-    combine357.m3 = m35->m3;
-    combine357.m5 = m35->m5;
-    combine357.m7 = m7;
+    DREF(combine357)->m3 = m35->m3;
+    DREF(combine357)->m5 = m35->m5;
+    DREF(combine357)->m7 = m7;
     return true;
   } else {
     return false;
@@ -117,8 +117,8 @@ DTASK(combine35, struct { int m3, m5; }) {
   int m3 = *DREF(mod_three);
   int m5 = *DREF(mod_five);
   if(DTASK_AND(MOD_THREE | MOD_FIVE)) {
-    combine35.m3 = m3;
-    combine35.m5 = m5;
+    DREF(combine35)->m3 = m3;
+    DREF(combine35)->m5 = m5;
     return true;
   } else {
     return false;
@@ -135,8 +135,8 @@ DTASK(combine57, struct { int m5, m7; }) {
   int m5 = *DREF(mod_five);
   int m7 = *DREF(mod_seven);
   if(DTASK_AND(MOD_FIVE | MOD_SEVEN)) {
-    combine57.m5 = m5;
-    combine57.m7 = m7;
+    DREF(combine57)->m5 = m5;
+    DREF(combine57)->m7 = m7;
     return true;
   } else {
     return false;
@@ -153,7 +153,7 @@ DTASK_DISABLE(mod_three) {
 DTASK(mod_three, int) {
   int x = *DREF(count);
   if(x % 3 != 0) return false;
-  mod_three = x / 3;
+  *DREF(mod_three) = x / 3;
   debugf("[3] ");
   return true;
 }
@@ -167,7 +167,7 @@ DTASK_DISABLE(mod_five) {
 DTASK(mod_five, int) {
   int x = *DREF(count);
   if(x % 5 != 0) return false;
-  mod_five = x / 5;
+  *DREF(mod_five) = x / 5;
   debugf("[5] ");
   return true;
 }
@@ -181,12 +181,12 @@ DTASK_DISABLE(mod_seven) {
 DTASK(mod_seven, int) {
   int x = *DREF(count);
   if(x % 7 != 0) return false;
-  mod_seven = x / 7;
+  *DREF(mod_seven) = x / 7;
   debugf("[7] ");
   return true;
 }
 
 DTASK(count, int) {
-  count++;
+  (*DREF(count))++;
   return true;
 }
