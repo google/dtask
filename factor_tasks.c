@@ -26,6 +26,8 @@ DTASK(fizzbuzz, int) {
   (void)DREF(mod_three);
   (void)DREF(mod_five);
   (void)DREF_WEAK(mod_seven);
+  int id = *DREF(id);
+  printf("%d > ", id);
   if(DTASK_OR(MOD_THREE | MOD_FIVE | MOD_SEVEN)) {
     if(events & MOD_THREE) {
       printf("fizz");
@@ -53,6 +55,8 @@ DTASK(output35, int) {
   const combine35_t *x = DREF(combine35);
   assert(x->m3 * 3 == x->m5 * 5);
   debugf("\n");
+  int id = *DREF(id);
+  printf("%d > ", id);
   printf("%d * 3 == %d * 5 == %d\n", x->m3, x->m5, x->m3 * 3);
   debugf("\n");
   return true;
@@ -68,6 +72,8 @@ DTASK(output57, int) {
   const combine57_t *x = DREF(combine57);
   assert(x->m5 * 5 == x->m7 * 7);
   debugf("\n");
+  int id = *DREF(id);
+  printf("%d > ", id);
   printf("%d * 5 == %d * 7 == %d\n", x->m5, x->m7, x->m5 * 5);
   debugf("\n");
   return true;
@@ -83,6 +89,8 @@ DTASK(output357, int) {
   const combine357_t *x = DREF(combine357);
   assert(x->m3 * 3 == x->m5 * 5 && x->m5 * 5 == x->m7 * 7);
   debugf("\n");
+  int id = *DREF(id);
+  printf("%d > ", id);
   printf("%d * 3 == %d * 5 == %d * 7 == %d\n", x->m3, x->m5, x->m7, x->m3 * 3);
   debugf("\n");
   return true;
@@ -188,5 +196,10 @@ DTASK(mod_seven, int) {
 
 DTASK(count, int) {
   (*DREF(count))++;
+  return true;
+}
+
+// just a placeholder
+DTASK(id, int) {
   return true;
 }

@@ -19,11 +19,3 @@ DTASK(toggle, bool) {
   *DREF(toggle) = !*DREF(toggle);
   return true;
 }
-
-DTASK(toggle2, bool) {
-  if(*DREF(toggle)) {
-    *DREF(toggle2) = !*DREF(toggle2);
-    return true;
-  }
-  return false;
-}

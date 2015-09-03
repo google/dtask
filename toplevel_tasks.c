@@ -18,29 +18,28 @@
 DTASK_GROUP(toplevel_tasks)
 
 extern dtask_config_t factor_config;
-extern factor_tasks_state_t factor_state;
+extern factor_tasks_state_t factor_state[2];
 DTASK(factor_events, dtask_set_t)
 {
   /* connect factor_tasks to simple_tasks */
-  dtask_set_t initial = 0;
+  dtask_set_t initial = COUNT;
+  int idx = *DREF(simple_toggle) ? 1 : 0; // being verbose to make indexing clear
 
-  /* TOGGLE triggers COUNT */
-  if(*DREF(simple_events) & TOGGLE2) {
-    initial |= COUNT;
-  }
-
-  *DREF(factor_events) = dtask_run(&factor_config, &factor_state, initial, events);
+  *DREF(factor_events) = dtask_run(&factor_config, &factor_state[idx], initial, events);
   return *DREF(factor_events) != 0;
 }
 
 extern dtask_config_t simple_config;
 extern simple_tasks_state_t simple_state;
-DTASK(simple_events, dtask_set_t)
+DTASK(simple_toggle, bool)
 {
   dtask_set_t initial = TOGGLE;
 
-  *DREF(simple_events) = dtask_run(&simple_config, &simple_state, initial, events);
+  dtask_set_t simple_events = dtask_run(&simple_config, &simple_state, initial, events);
 
-  /* TOGGLE2 is the only 'exported' event */
-  return (*DREF(simple_events) & TOGGLE2) != 0;
+  // deoendency on simple_state.toggle cannot be handled automatically
+  // because it is within another (sub)graph
+  *DREF(simple_toggle) = simple_state.toggle;
+
+  return (simple_events & TOGGLE) != 0;
 }
