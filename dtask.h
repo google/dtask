@@ -55,7 +55,11 @@ void __dtask_noop(void);
 #define DTASK(name, ...)  \
   bool __dtask_##name(void *state, dtask_set_t events, dtask_set_t parent_events)
 
-#define DTASK_GROUP(group_name)
+#define DTASK_GROUP(group_name) \
+typedef group_name##_state_t dref_t;
+
+#define DREF(x) ((x##_t *)&((dref_t *)state)->x)
+#define DREF_WEAK(x) DREF(x)
 
 #define DTASK_ENABLE(name)  \
   void __dtask_enable_##name(void)

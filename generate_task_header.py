@@ -245,16 +245,9 @@ static dtask_set_t {name}_run(const dtask_config_t *config, void *state, dtask_s
   return events;
 }
 ''')
-        f.write('\n#endif\n')
 
         f.write('''
-#ifndef DREF
-#define DREF(x) ((x##_t *)&(({}_state_t *)state)->x)
-#define DREF_WEAK(x) DREF(x)
 #endif
-'''.format(name))
-
-        f.write('''
 #endif
 ''')
 
