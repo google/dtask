@@ -3,7 +3,7 @@
 
 #include "dtask.h"
 
-void __dtask_noop() {}
+void __dtask_noop(dtask_state_t *state) {}
 
 #ifdef NO_CLZ
 dtask_id_t dtask_set_find_first(dtask_set_t set, dtask_id_t prev) {
@@ -39,10 +39,11 @@ dtask_id_t dtask_set_find_last(dtask_set_t set, dtask_id_t prev) {
 #define dtask_set_find_last(set, prev) (DTASK_MAX_ID - __builtin_ctz(set))
 #endif
 
-static void dtask_update_enabled_dependencies(dtask_config_t *config, dtask_set_t set) {
-  config->enabled |= set;
-  dtask_set_t enabled_dependencies = config->enabled_dependencies | set;
-  const dtask_t *tasks = config->tasks;
+static void dtask_update_enabled_dependencies(dtask_state_t *state, dtask_set_t set) {
+  dtask_select_t *select = &state->select;
+  select->enabled |= set;
+  dtask_set_t enabled_dependencies = select->enabled_dependencies | set;
+  const dtask_t *tasks = state->config.tasks;
   dtask_id_t n = 0;
 
   // enable dependencies
@@ -52,13 +53,14 @@ static void dtask_update_enabled_dependencies(dtask_config_t *config, dtask_set_
     set &= ~dtask_bit(n);
   }
 
-  config->enabled_dependencies = enabled_dependencies;
+  select->enabled_dependencies = enabled_dependencies;
 }
 
-static void dtask_update_disabled_dependents(dtask_config_t *config, dtask_set_t set) {
-  config->disabled |= set;
-  dtask_set_t disabled_dependents = config->disabled_dependents | set;
-  const dtask_t *tasks = config->tasks;
+static void dtask_update_disabled_dependents(dtask_state_t *state, dtask_set_t set) {
+  dtask_select_t *select = &state->select;
+  select->disabled |= set;
+  dtask_set_t disabled_dependents = select->disabled_dependents | set;
+  const dtask_t *tasks = state->config.tasks;
   dtask_id_t n = 0;
 
   // disable dependents
@@ -68,133 +70,144 @@ static void dtask_update_disabled_dependents(dtask_config_t *config, dtask_set_t
     set &= ~dtask_bit(n);
   }
 
-  config->disabled_dependents = disabled_dependents;
+  select->disabled_dependents = disabled_dependents;
 }
 
-static void dtask_call_enable_functions(dtask_config_t *config, dtask_set_t prev_selected) {
-  dtask_set_t new_enabled = config->selected & ~prev_selected;
-  const dtask_t *tasks = config->tasks;
+static void dtask_call_enable_functions(dtask_state_t *state) {
+  dtask_select_t *select = &state->select;
+  dtask_set_t new_enabled = select->requested & ~select->selected;
+  const dtask_t *tasks = state->config.tasks;
   dtask_id_t n = 0;
 
   // call enable functions
   while(new_enabled) {
     n = dtask_set_find_first(new_enabled, n);
-    tasks[n].enable_func();
+    tasks[n].enable_func(state);
     new_enabled &= ~dtask_bit(n);
   }
+
+  select->selected |= select->requested;
 }
 
-static void dtask_call_disable_functions(dtask_config_t *config, dtask_set_t prev_selected) {
-  dtask_set_t new_disabled = ~config->selected & prev_selected;
-  const dtask_t *tasks = config->tasks;
+static void dtask_call_disable_functions(dtask_state_t *state) {
+  dtask_select_t *select = &state->select;
+  dtask_set_t new_disabled = ~select->requested & select->selected;
+  const dtask_t *tasks = state->config.tasks;
   dtask_id_t n = DTASK_MAX_ID;
 
   // call disable functions (in reverse order, before dependencies)
   while(new_disabled) {
     n = dtask_set_find_last(new_disabled, n);
-    tasks[n].disable_func();
+    tasks[n].disable_func(state);
     new_disabled &= ~dtask_bit(n);
   }
+
+  select->selected &= select->requested;
 }
 
-void dtask_enable(dtask_config_t *config, dtask_set_t set)
+void dtask_enable(dtask_state_t *state, dtask_set_t set)
 {
-  dtask_set_t prev_selected = config->selected;
-  dtask_update_enabled_dependencies(config, set);
+  dtask_select_t *select = &state->select;
+  dtask_update_enabled_dependencies(state, set);
 
   // clear conflicting disables and recompute
-  if(config->disabled & config->enabled_dependencies) {
-    config->disabled &= ~config->enabled_dependencies;
-    config->disabled_dependents = 0;
-    dtask_update_disabled_dependents(config, config->disabled);
+  if(select->disabled & select->enabled_dependencies) {
+    select->disabled &= ~select->enabled_dependencies;
+    select->disabled_dependents = 0;
+    dtask_update_disabled_dependents(state, select->disabled);
   }
 
-  // update selected and call enable functions
-  config->selected = config->enabled_dependencies & ~config->disabled_dependents;
-  dtask_call_enable_functions(config, prev_selected);
+  // update requested
+  select->requested = select->enabled_dependencies & ~select->disabled_dependents;
 }
 
-void dtask_disable(dtask_config_t *config, dtask_set_t set)
+void dtask_disable(dtask_state_t *state, dtask_set_t set)
 {
-  dtask_set_t prev_selected = config->selected;
-  dtask_update_disabled_dependents(config, set);
+  dtask_select_t *select = &state->select;
+  dtask_update_disabled_dependents(state, set);
 
   // clear directly conflicting enables and recompute
-  if(config->enabled & set) {
-    config->enabled &= ~set;
-    config->enabled_dependencies = 0;
-    dtask_update_enabled_dependencies(config, config->enabled);
+  if(select->enabled & set) {
+    select->enabled &= ~set;
+    select->enabled_dependencies = 0;
+    dtask_update_enabled_dependencies(state, select->enabled);
   }
 
-  // update selected and call disable functions
-  config->selected = config->enabled_dependencies & ~config->disabled_dependents;
-  dtask_call_disable_functions(config, prev_selected);
+  // update requested
+  select->requested = select->enabled_dependencies & ~select->disabled_dependents;
 }
 
-void dtask_clear(dtask_config_t *config, dtask_set_t set) {
-  dtask_set_t prev_selected = config->selected;
+void dtask_clear(dtask_state_t *state, dtask_set_t set) {
+  dtask_select_t *select = &state->select;
 
   // clear directly conflicting enables and recompute
-  if(config->enabled & set) {
-    config->enabled &= ~set;
-    config->enabled_dependencies = 0;
-    dtask_update_enabled_dependencies(config, config->enabled);
+  if(select->enabled & set) {
+    select->enabled &= ~set;
+    select->enabled_dependencies = 0;
+    dtask_update_enabled_dependencies(state, select->enabled);
   }
 
   // clear directly conflicting disables and recompute
-  if(config->disabled & set) {
-    config->disabled &= ~set;
-    config->disabled_dependents = 0;
-    dtask_update_disabled_dependents(config, config->disabled);
+  if(select->disabled & set) {
+    select->disabled &= ~set;
+    select->disabled_dependents = 0;
+    dtask_update_disabled_dependents(state, select->disabled);
   }
 
-  // update selected and call disable/enable functions
-  config->selected = config->enabled_dependencies & ~config->disabled_dependents;
-  dtask_call_disable_functions(config, prev_selected);
-  dtask_call_enable_functions(config, prev_selected);
+  // update requested
+  select->requested = select->enabled_dependencies & ~select->disabled_dependents;
 }
 
-void dtask_switch(dtask_config_t *config, dtask_set_t set) {
-  dtask_set_t prev_selected = config->selected;
+void dtask_switch(dtask_state_t *state, dtask_set_t set) {
+  dtask_select_t *select = &state->select;
 
-  // reset enable/disable config
-  config->enabled = 0;
-  config->disabled = 0;
-  config->enabled_dependencies = 0;
-  config->disabled_dependents = 0;
+  // reset select
+  select->enabled = 0;
+  select->disabled = 0;
+  select->enabled_dependencies = 0;
+  select->disabled_dependents = 0;
 
   // enable set
-  dtask_update_enabled_dependencies(config, set);
-  config->selected = config->enabled_dependencies;
+  dtask_update_enabled_dependencies(state, set);
+  select->requested = select->enabled_dependencies;
+}
 
-  // call enable/disable functions
-  dtask_call_disable_functions(config, prev_selected);
-  dtask_call_enable_functions(config, prev_selected);
+// call enable/disable functions
+void dtask_select(dtask_state_t *state) {
+  dtask_select_t *select = &state->select;
+  if(select->requested != select->selected) {
+    dtask_call_disable_functions(state);
+    dtask_call_enable_functions(state);
+  }
 }
 
 #ifndef NO_CLZ
-dtask_set_t dtask_run(const dtask_config_t *config, void *state, dtask_set_t initial, dtask_set_t parent_events) {
-  const dtask_set_t selected = config->selected;
+dtask_set_t dtask_run(dtask_state_t *state, dtask_set_t initial) {
+  dtask_select(state);
+
+  const dtask_set_t selected = state->select.selected;
   dtask_set_t
     scheduled = initial & selected,
-    events = 0,
     active = 0;
+
+  state->events = 0;
 
   while(scheduled) {
     active = dtask_set_find_first(scheduled, active);
     const dtask_set_t id_bit = dtask_bit(active);
-    const dtask_t *task = &config->tasks[active];
+    const dtask_t *task = &state->config.tasks[active];
     if((id_bit & scheduled) &&
-       task->func(state, events, parent_events)) {
-      events |= id_bit;
+       task->func(state)) {
+      state->events |= id_bit;
       scheduled |= task->dependents & selected;
     }
     scheduled &= ~id_bit;
   }
-  return events;
+  return state->events;
 }
 #else
-dtask_set_t dtask_run(const dtask_config_t *config, void *state, dtask_set_t initial, dtask_set_t parent_events) {
-  return config->run(config, state, initial, parent_events);
+dtask_set_t dtask_run(dtask_state_t *state, dtask_set_t initial) {
+  dtask_select(state);
+  return state->config.run(state, initial);
 }
 #endif

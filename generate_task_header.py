@@ -175,7 +175,9 @@ def generate_header():
                                                        show_set(initial)))
 
         #declare type
-        f.write('typedef struct {}_state_s {{\n'.format(name))
+        f.write('typedef struct {}_state {{\n'.format(name))
+        f.write('  DTASK_STATE_HEADER;\n')
+
         for (task, dict) in tasks:
             f.write('  {} {};\n'.format(dict['type'], task))
         f.write('}} {}_state_t;\n\n'.format(name))
@@ -218,19 +220,19 @@ static const dtask_t {}[{}] = {{
         #prologue
         f.write('''
 #pragma GCC diagnostic ignored "-Wunused-function"
-static dtask_set_t {name}_run(const dtask_config_t *config, void *state, dtask_set_t initial, dtask_set_t parent_events) {{
-  const dtask_set_t selected = config->selected;
+static dtask_set_t {name}_run(dtask_state_t *state, dtask_set_t initial) {{
+  const dtask_set_t selected = state->select.selected;
   dtask_set_t
-    scheduled = initial & selected,
-    events = 0;
+    scheduled = initial & selected;
+  state->events = 0;
 '''.format(name=name))
 
         #dispatch code
         for (task, dict) in tasks:
             f.write('''
-    if(({uptask} & scheduled) && __dtask_{task}(state, events, parent_events)) {{
-    events |= {uptask};'''.format(task=task,
-                                  uptask=task.upper()))
+    if(({uptask} & scheduled) && __dtask_{task}(state)) {{
+    state->events |= {uptask};'''.format(task=task,
+                                         uptask=task.upper()))
             if dict['depnts']:
                 f.write('''
     scheduled |= ({depnts}) & selected;'''
@@ -242,7 +244,7 @@ static dtask_set_t {name}_run(const dtask_config_t *config, void *state, dtask_s
 
         #epilogue
         f.write('''
-  return events;
+  return state->events;
 }
 ''')
 
