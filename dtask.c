@@ -100,8 +100,10 @@ void dtask_enable(dtask_state_t *state, dtask_set_t set)
 
     // clear conflicting disables
     select->disabled &= ~set;
-    set_foreach(set,
-                select->disabled &= ~tasks[n].all_dependencies);
+    if(select->disabled) {
+      set_foreach(set,
+                  select->disabled &= ~tasks[n].all_dependencies);
+    }
   }
 }
 
