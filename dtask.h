@@ -54,10 +54,8 @@ struct dtask_select
   dtask_set_t
     enabled,
     disabled,
-    enabled_dependencies,
-    disabled_dependents,
-    requested,
     selected;
+  bool dirty;
 };
 
 struct dtask_state
@@ -70,6 +68,7 @@ void dtask_enable(dtask_state_t *state, dtask_set_t set);
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
 void dtask_clear(dtask_state_t *state, dtask_set_t set);
 void dtask_switch(dtask_state_t *state, dtask_set_t set);
+void dtask_select(dtask_state_t *state);
 void __dtask_noop(dtask_state_t *state);
 
 #ifndef DTASK_GEN

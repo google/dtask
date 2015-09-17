@@ -40,7 +40,9 @@ int main() {
 
   printf("\n\n_____ disabling MOD_SEVEN[0] _____\n");
   dtask_switch((dtask_state_t *)&factor_state[0], OUTPUT35 | OUTPUT57);
+  dtask_select((dtask_state_t *)&factor_state[0]);
   dtask_disable((dtask_state_t *)&factor_state[0], MOD_SEVEN);
+  dtask_select((dtask_state_t *)&factor_state[0]);
   for(int i = 0; i < 100; i++) {
     dtask_run(state, SIMPLE_TOGGLE);
   }

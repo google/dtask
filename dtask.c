@@ -39,145 +39,106 @@ dtask_id_t dtask_set_find_last(dtask_set_t set, dtask_id_t prev) {
 #define dtask_set_find_last(set, prev) (DTASK_MAX_ID - __builtin_ctz(set))
 #endif
 
-static void dtask_update_enabled_dependencies(dtask_state_t *state, dtask_set_t set) {
+#define set_foreach(set, action)                \
+  do {                                          \
+    dtask_id_t n = 0;                           \
+    dtask_set_t left = (set);                   \
+    while(left) {                               \
+      n = dtask_set_find_first(left, n);        \
+      action;                                   \
+      left &= ~dtask_bit(n);                    \
+    }                                           \
+  } while(0)
+
+#define set_foreach_rev(set, action)            \
+  do {                                          \
+    dtask_id_t n = DTASK_MAX_ID;                \
+    dtask_set_t left = (set);                   \
+    while(left) {                               \
+      n = dtask_set_find_last(left, n);         \
+      action;                                   \
+      left &= ~dtask_bit(n);                    \
+    }                                           \
+  } while(0)
+
+static dtask_set_t dtask_requested(dtask_state_t *state) {
   dtask_select_t *select = &state->select;
-  select->enabled |= set;
-  dtask_set_t enabled_dependencies = select->enabled_dependencies | set;
+  dtask_set_t requested = select->enabled;
   const dtask_t *tasks = state->config.tasks;
-  dtask_id_t n = 0;
 
-  // enable dependencies
-  while(set) {
-    n = dtask_set_find_first(set, n);
-    enabled_dependencies |= tasks[n].all_dependencies;
-    set &= ~dtask_bit(n);
-  }
+  // remove disabled dependents
+  set_foreach(select->disabled,
+              requested &= ~tasks[n].all_dependents);
 
-  select->enabled_dependencies = enabled_dependencies;
+  // add dependencies
+  set_foreach(requested,
+              requested |= tasks[n].all_dependencies);
+
+  return requested;
 }
 
-static void dtask_update_disabled_dependents(dtask_state_t *state, dtask_set_t set) {
-  dtask_select_t *select = &state->select;
-  select->disabled |= set;
-  dtask_set_t disabled_dependents = select->disabled_dependents | set;
+static void dtask_call_enable_functions(dtask_state_t *state, dtask_set_t set) {
   const dtask_t *tasks = state->config.tasks;
-  dtask_id_t n = 0;
-
-  // disable dependents
-  while(set) {
-    n = dtask_set_find_first(set, n);
-    disabled_dependents |= tasks[n].all_dependents;
-    set &= ~dtask_bit(n);
-  }
-
-  select->disabled_dependents = disabled_dependents;
+  set_foreach(set,
+              tasks[n].enable_func(state));
 }
 
-static void dtask_call_enable_functions(dtask_state_t *state) {
-  dtask_select_t *select = &state->select;
-  dtask_set_t new_enabled = select->requested & ~select->selected;
+static void dtask_call_disable_functions(dtask_state_t *state, dtask_set_t set) {
   const dtask_t *tasks = state->config.tasks;
-  dtask_id_t n = 0;
-
-  // call enable functions
-  while(new_enabled) {
-    n = dtask_set_find_first(new_enabled, n);
-    tasks[n].enable_func(state);
-    new_enabled &= ~dtask_bit(n);
-  }
-
-  select->selected |= select->requested;
-}
-
-static void dtask_call_disable_functions(dtask_state_t *state) {
-  dtask_select_t *select = &state->select;
-  dtask_set_t new_disabled = ~select->requested & select->selected;
-  const dtask_t *tasks = state->config.tasks;
-  dtask_id_t n = DTASK_MAX_ID;
-
-  // call disable functions (in reverse order, before dependencies)
-  while(new_disabled) {
-    n = dtask_set_find_last(new_disabled, n);
-    tasks[n].disable_func(state);
-    new_disabled &= ~dtask_bit(n);
-  }
-
-  select->selected &= select->requested;
+  set_foreach_rev(set,
+                  tasks[n].disable_func(state));
 }
 
 void dtask_enable(dtask_state_t *state, dtask_set_t set)
 {
   dtask_select_t *select = &state->select;
-  dtask_update_enabled_dependencies(state, set);
+  const dtask_t *tasks = state->config.tasks;
 
-  // clear conflicting disables and recompute
-  if(select->disabled & select->enabled_dependencies) {
-    select->disabled &= ~select->enabled_dependencies;
-    select->disabled_dependents = 0;
-    dtask_update_disabled_dependents(state, select->disabled);
+  if(set & ~select->enabled) {
+    select->dirty = true;
+    select->enabled |= set;
+
+    // clear conflicting disables
+    select->disabled &= ~set;
+    set_foreach(set,
+                select->disabled &= ~tasks[n].all_dependencies);
   }
-
-  // update requested
-  select->requested = select->enabled_dependencies & ~select->disabled_dependents;
 }
 
 void dtask_disable(dtask_state_t *state, dtask_set_t set)
 {
   dtask_select_t *select = &state->select;
-  dtask_update_disabled_dependents(state, set);
-
-  // clear directly conflicting enables and recompute
-  if(select->enabled & set) {
+  if(set & ~select->disabled) {
+    select->dirty = true;
+    select->disabled |= set;
     select->enabled &= ~set;
-    select->enabled_dependencies = 0;
-    dtask_update_enabled_dependencies(state, select->enabled);
   }
-
-  // update requested
-  select->requested = select->enabled_dependencies & ~select->disabled_dependents;
 }
 
 void dtask_clear(dtask_state_t *state, dtask_set_t set) {
   dtask_select_t *select = &state->select;
 
   // clear directly conflicting enables and recompute
-  if(select->enabled & set) {
+  if((select->enabled | select->disabled) & set) {
+    select->dirty = true;
     select->enabled &= ~set;
-    select->enabled_dependencies = 0;
-    dtask_update_enabled_dependencies(state, select->enabled);
-  }
-
-  // clear directly conflicting disables and recompute
-  if(select->disabled & set) {
     select->disabled &= ~set;
-    select->disabled_dependents = 0;
-    dtask_update_disabled_dependents(state, select->disabled);
   }
-
-  // update requested
-  select->requested = select->enabled_dependencies & ~select->disabled_dependents;
 }
 
 void dtask_switch(dtask_state_t *state, dtask_set_t set) {
-  dtask_select_t *select = &state->select;
-
-  // reset select
-  select->enabled = 0;
-  select->disabled = 0;
-  select->enabled_dependencies = 0;
-  select->disabled_dependents = 0;
-
-  // enable set
-  dtask_update_enabled_dependencies(state, set);
-  select->requested = select->enabled_dependencies;
+  dtask_clear(state, ~(dtask_set_t)0);
+  dtask_enable(state, set);
 }
 
-// call enable/disable functions
 void dtask_select(dtask_state_t *state) {
   dtask_select_t *select = &state->select;
-  if(select->requested != select->selected) {
-    dtask_call_disable_functions(state);
-    dtask_call_enable_functions(state);
+  if(select->dirty) {
+    dtask_set_t requested = dtask_requested(state);
+    dtask_call_disable_functions(state, ~requested & select->selected);
+    dtask_call_enable_functions(state, requested & ~select->selected);
+    select->selected = requested;
+    select->dirty = false;
   }
 }
 
