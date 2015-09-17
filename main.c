@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "types.h"
 
 // #define ALL_TASKS_AFTER_TASK_HOOK printf("hook\n")
 #ifndef DTASK_GEN
@@ -34,7 +35,7 @@ int main() {
   dtask_switch((dtask_state_t *)&factor_state[0], OUTPUT357);
   dtask_switch((dtask_state_t *)&factor_state[1], 0);
 
-  for(int i = 0; i < 500; i++) {
+  for(int i = 0; i < 2000; i++) {
     dtask_run(state, SIMPLE_TOGGLE);
   }
 

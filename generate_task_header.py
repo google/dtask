@@ -31,6 +31,7 @@ def init_task(tasks, name):
 
 def find_tasks_in_file(filename):
     in_group = False
+    in_dtask = False
     tasks = {}
 
     last_task = None
@@ -49,6 +50,7 @@ def find_tasks_in_file(filename):
                 group = match.group(1)
                 in_group = group == options.target
                 last_task = None
+                in_dtask = False
 
             if in_group:
 
@@ -60,6 +62,7 @@ def find_tasks_in_file(filename):
                     init_task(tasks, name)
                     tasks[name]['type'] = type
                     last_task = tasks[name]
+                    in_dtask = True
 
                 #match DTASK_(EN|DIS)ABLE(...) definitions
                 match = dtask_enable_or_disable_re.search(line)
@@ -71,15 +74,17 @@ def find_tasks_in_file(filename):
                     elif match.group(1) == 'DIS':
                         init_task(tasks, name)
                         tasks[name]['dis'] = True
+                    in_dtask = False
 
                 #match DREF(...) expressions
-                for match in dget_re.finditer(line):
-                    if match:
-                        if match.group(1):
-                            # weak dependency
-                            last_task['weak_deps'].add(match.group(2))
-                        else:
-                            last_task['deps'].add(match.group(2))
+                if in_dtask:
+                    for match in dget_re.finditer(line):
+                        if match:
+                            if match.group(1):
+                                # weak dependency
+                                last_task['weak_deps'].add(match.group(2))
+                            else:
+                                last_task['deps'].add(match.group(2))
     return tasks
 
 

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include "types.h"
 
 #ifndef DTASK_GEN
 #include "toplevel_tasks.h"

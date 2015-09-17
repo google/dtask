@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include "types.h"
 
 #ifndef DTASK_GEN
 #include "factor_tasks.h"
@@ -88,23 +89,37 @@ DTASK(output357, int) {
   debugf("\n");
   printf("%d > ", state->config.id);
   printf("%d * 3 == %d * 5 == %d * 7 == %d\n", x->m3, x->m5, x->m7, x->m3 * 3);
+
+  // demonstrate delays
+  printf("d = [%d", *delay_int_5_read(&x->d, 0));
+  for(int i = 1; i < 5; i++)
+  {
+    int v = *delay_int_5_read(&x->d, i);
+    printf(", %d", v);
+  }
+  printf("]\n");
   debugf("\n");
   return true;
 }
 
 DTASK_ENABLE(combine357) {
   printf("%d > combine357 enabled\n", state->config.id);
+  int zero = 0;
+  delay_int_5_fill(&DREF(combine357)->d, &zero);
 }
 DTASK_DISABLE(combine357) {
   printf("%d > combine357 disabled\n", state->config.id);
 }
-DTASK(combine357, struct { int m3, m5, m7; }) {
+DTASK(combine357, struct { int m3, m5, m7; delay_int_5_t d; }) {
   const combine35_t *m35 = DREF(combine35);
   int m7 = *DREF(mod_seven);
   if(DTASK_AND(COMBINE35 | MOD_SEVEN)) {
     DREF(combine357)->m3 = m35->m3;
     DREF(combine357)->m5 = m35->m5;
     DREF(combine357)->m7 = m7;
+
+    // demonstrate delays
+    delay_int_5_write(&DREF(combine357)->d, &((factor_tasks_state_t *)state)->count);
     return true;
   } else {
     return false;
