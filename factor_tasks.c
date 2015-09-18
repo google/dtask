@@ -91,10 +91,10 @@ DTASK(output357, int) {
   printf("%d * 3 == %d * 5 == %d * 7 == %d\n", x->m3, x->m5, x->m7, x->m3 * 3);
 
   // demonstrate delays
-  printf("d = [%d", *delay_int_5_read(&x->d, 0));
-  for(int i = 1; i < 5; i++)
+  printf("d = [%d", *DELAY_READ(&x->d, int, OUTPUT_DELAY_SIZE, 0));
+  for(int i = 1; i < OUTPUT_DELAY_SIZE; i++)
   {
-    int v = *delay_int_5_read(&x->d, i);
+    int v = *DELAY_READ(&x->d, int, OUTPUT_DELAY_SIZE, i);
     printf(", %d", v);
   }
   printf("]\n");
@@ -105,12 +105,12 @@ DTASK(output357, int) {
 DTASK_ENABLE(combine357) {
   printf("%d > combine357 enabled\n", state->config.id);
   int zero = 0;
-  delay_int_5_fill(&DREF(combine357)->d, &zero);
+  DELAY_FILL(&DREF(combine357)->d, int, OUTPUT_DELAY_SIZE, &zero);
 }
 DTASK_DISABLE(combine357) {
   printf("%d > combine357 disabled\n", state->config.id);
 }
-DTASK(combine357, struct { int m3, m5, m7; delay_int_5_t d; }) {
+DTASK(combine357, struct { int m3, m5, m7; DELAY(int, OUTPUT_DELAY_SIZE) d; }) {
   const combine35_t *m35 = DREF(combine35);
   int m7 = *DREF(mod_seven);
   if(DTASK_AND(COMBINE35 | MOD_SEVEN)) {
@@ -119,7 +119,7 @@ DTASK(combine357, struct { int m3, m5, m7; delay_int_5_t d; }) {
     DREF(combine357)->m7 = m7;
 
     // demonstrate delays
-    delay_int_5_write(&DREF(combine357)->d, &((factor_tasks_state_t *)state)->count);
+    DELAY_WRITE(&DREF(combine357)->d, int, OUTPUT_DELAY_SIZE, DREF_WEAK(count));
     return true;
   } else {
     return false;

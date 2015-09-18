@@ -1,7 +1,8 @@
 #ifndef __DELAY__
 #define __DELAY__
 
-#define DECLARE_DELAY(type, len)                                        \
+#define DECLARE_DELAY(type, len) _DECLARE_DELAY(type, len)
+#define _DECLARE_DELAY(type, len)                                       \
   typedef struct {                                                      \
     unsigned int t;                                                     \
     type z[len];                                                        \
@@ -24,9 +25,13 @@
     delay->t = 0;                                                       \
   }
 
-#define DELAY(type, len) delay_##type##_##len##_t
-#define DELAY_READ(delay, type, len, idx) delay_##type##_##len##_read(delay, idx)
-#define DELAY_WRITE(delay, type, len, val) delay_##type##_##len##_write(delay, val)
-#define DELAY_FILL(delay, type, len, val) delay_##type##_##len##_fill(delay, val)
+#define DELAY(type, len) _DELAY(type, len)
+#define _DELAY(type, len) delay_##type##_##len##_t
+#define DELAY_READ(delay, type, len, idx) _DELAY_READ(delay, type, len, idx)
+#define _DELAY_READ(delay, type, len, idx) delay_##type##_##len##_read(delay, idx)
+#define DELAY_WRITE(delay, type, len, val) _DELAY_WRITE(delay, type, len, val)
+#define _DELAY_WRITE(delay, type, len, val) delay_##type##_##len##_write(delay, val)
+#define DELAY_FILL(delay, type, len, val) _DELAY_FILL(delay, type, len, val)
+#define _DELAY_FILL(delay, type, len, val) delay_##type##_##len##_fill(delay, val)
 
 #endif

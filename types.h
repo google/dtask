@@ -3,6 +3,8 @@
 
 #include "delay.h"
 
-DECLARE_DELAY(int, 5);
+#define OUTPUT_DELAY_SIZE 5
+
+DECLARE_DELAY(int, OUTPUT_DELAY_SIZE);
 
 #endif
