@@ -116,19 +116,20 @@ struct dtask_state
 // update state, running dtasks in the initial set
 dtask_set_t dtask_run(dtask_state_t *state, dtask_set_t initial);
 
-// explicitly enable dtasks in the set
+// request to enable dtasks in the set
 void dtask_enable(dtask_state_t *state, dtask_set_t set);
 
-// explicitly disable dtasks in the set
+// request to disable dtasks in the set
 void dtask_disable(dtask_state_t *state, dtask_set_t set);
 
-// clear explicit flags, enable only if needed
+// clear requests for dtasks in the set, i.e. enable only if needed
 void dtask_clear(dtask_state_t *state, dtask_set_t set);
 
 // explicitly enable dtasks in set, clear others
 void dtask_switch(dtask_state_t *state, dtask_set_t set);
 
 // update selection state
+// requests from dtask_enable/disable/clear/switch only take effect after calling this
 void dtask_select(dtask_state_t *state);
 
 
