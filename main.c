@@ -8,12 +8,12 @@
 #include "simple_tasks.h"
 #endif
 
-toplevel_tasks_state_t toplevel_state = DTASK_INITIAL_STATE(toplevel_tasks, NULL, 0);
+toplevel_tasks_state_t toplevel_state = DTASK_STATE(toplevel_tasks, NULL, 0);
 factor_tasks_state_t factor_state[2] = {
-  DTASK_INITIAL_STATE(factor_tasks, &toplevel_tasks, 0),
-  DTASK_INITIAL_STATE(factor_tasks, &toplevel_tasks, 1)
+  DTASK_STATE(factor_tasks, &toplevel_tasks, 0),
+  DTASK_STATE(factor_tasks, &toplevel_tasks, 1)
 };
-simple_tasks_state_t simple_state = DTASK_INITIAL_STATE(simple_tasks, &toplevel_tasks, 0);
+simple_tasks_state_t simple_state = DTASK_STATE(simple_tasks, &toplevel_tasks, 0);
 
 int main() {
 
