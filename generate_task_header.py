@@ -7,14 +7,24 @@ import copy
 import subprocess
 import argparse
 
+# number of bits in dtask_set_t
 BITS_IN_DTASK_SET_T = 32
+
+# options read from argparse
 options = None
+
+# regexs
+
+# DTASK(name, type)
 dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,\s*(.+)\s*\)')
+# DGET(name)
 dget_re = re.compile(r'DREF(_WEAK)?\(\s*(\w+)\s*\)')
+# DTASK_ENABLE(name) | DTASK_DISABLE(name)
 dtask_enable_or_disable_re = re.compile(r'DTASK_(EN|DIS)ABLE\(\s*(\w+)\s*\)')
+# DTASK_GROUP(group_name)
 dtask_group_re = re.compile(r'DTASK_GROUP\(\s*(\w+)\s*\)')
 
-
+# initialize task object with name if not present in tasks
 def init_task(tasks, name):
     if not name in tasks:
         tasks[name] = {
@@ -28,7 +38,7 @@ def init_task(tasks, name):
             'dis': False
         }
 
-
+# look through file line by line, gathering data from regex matches
 def find_tasks_in_file(filename):
     in_group = False
     in_dtask = False
@@ -87,7 +97,7 @@ def find_tasks_in_file(filename):
                                 last_task['deps'].add(match.group(2))
     return tasks
 
-
+# toposort, then calculate dependencies
 def order_tasks(tasks):
     sorted = toposort_flatten({k: v['deps'] | v['weak_deps']
                                for (k, v) in tasks.iteritems()})
@@ -113,27 +123,29 @@ def order_tasks(tasks):
 
     return map(lambda name: (name, tasks[name]), sorted)
 
-
+# generate bit set expression in A | B | C format
 def show_set(s):
     return ' | '.join(
         map(lambda x: x.upper(), s)) if s else "0"
 
 
+# id to bit set conversion
 def dtask_bit(id):
     return (1 << (BITS_IN_DTASK_SET_T - 1)) >> id
 
-
+# generate a function name from the task name
 def func_name(task_name, type, present):
     if present:
         return '__dtask_' + type + '_' + task_name
     else:
         return '__dtask_noop'
 
-
+# generate a header based on the script arguments
 def generate_header():
     name = options.target
     files = options.source
-    #touch the header file
+
+    # touch the header file so that #include "header" doesn't cause cpp to fail
     if(options.output_file):
         header = options.output_file
     else:
@@ -142,6 +154,7 @@ def generate_header():
     with open(header, 'w') as f:
         os.utime(header, None)
 
+    # build information from the files
     tasks = {}
     for filename in sorted(files):
         new_tasks = find_tasks_in_file(filename)
@@ -150,6 +163,7 @@ def generate_header():
     ids = {}
     id = 0
 
+    # preamble
     with open(header, 'w') as f:
         f.write('''#ifndef __{name}__
 #define __{name}__
@@ -157,7 +171,8 @@ def generate_header():
 #include "dtask.h"
 
 '''.format(name=name.upper()))
-        # id masks
+
+        # define id macros
         for (task, _) in tasks:
             f.write('#define {} 0x{:x}\n'.format(task.upper(), dtask_bit(id)))
             f.write('#define {}_ID {:d}\n'.format(task.upper(), id))
@@ -165,12 +180,13 @@ def generate_header():
             id = id + 1
         f.write('#define {}_COUNT {:d}\n'.format(name.upper(), id))
 
+        # define a name string table
         f.write('\n#define {}_TASK_NAMES {{ \\\n'.format(name.upper()))
         for (task, _) in tasks:
             f.write('  "{}", \\\n'.format(task))
         f.write('}\n')
 
-        #initial
+        # initial tasks, can only be run when flagged as initial tasks
         initial = set()
         for (task, dict) in tasks:
             if not dict['deps']:
@@ -179,7 +195,7 @@ def generate_header():
         f.write('\n#define {}_INITIAL ({})\n\n'.format(name.upper(),
                                                        show_set(initial)))
 
-        #declare type
+        # declare state type
         f.write('typedef struct {}_state {{\n'.format(name))
         f.write('  DTASK_STATE_HEADER;\n')
 
@@ -187,7 +203,7 @@ def generate_header():
             f.write('  {} {};\n'.format(dict['type'], task))
         f.write('}} {}_state_t;\n\n'.format(name))
 
-        #declare tasks
+        #declare task functions
         for (task, dict) in tasks:
             f.write('DECLARE_DTASK({}, {});\n'.format(task, dict['type']))
             if dict['en']:
@@ -195,7 +211,7 @@ def generate_header():
             if dict['dis']:
                 f.write('DECLARE_DTASK_DISABLE({});\n'.format(task))
 
-        #dtask array
+        # dtask table
         f.write('''
 static const dtask_t {}[{}] = {{
 '''.format(name, id))
@@ -219,10 +235,10 @@ static const dtask_t {}[{}] = {{
                     all_depnts=show_set(dict['all_depnts'])))
         f.write(' };\n')
 
-        #define the runner
+        # define the NO_CLZ run function (compare to dtask_run)
         f.write('\n#ifdef NO_CLZ\n')
 
-        #prologue
+        # prologue
         f.write('''
 #pragma GCC diagnostic ignored "-Wunused-function"
 static dtask_set_t {name}_run(dtask_state_t *state, dtask_set_t initial) {{
@@ -232,7 +248,7 @@ static dtask_set_t {name}_run(dtask_state_t *state, dtask_set_t initial) {{
   state->events = 0;
 '''.format(name=name))
 
-        #dispatch code
+        # dispatch code
         for (task, dict) in tasks:
             f.write('''
     if(({uptask} & scheduled) && __dtask_{task}(state)) {{
@@ -247,7 +263,7 @@ static dtask_set_t {name}_run(dtask_state_t *state, dtask_set_t initial) {{
   }
 ''')
 
-        #epilogue
+        # epilogue
         f.write('''
   return state->events;
 }
@@ -260,6 +276,8 @@ static dtask_set_t {name}_run(dtask_state_t *state, dtask_set_t initial) {{
 
 
 def main():
+
+    # run argparse
     global options
     parser = argparse.ArgumentParser(description='Generate a DTask header')
     parser.add_argument('source', nargs='*',
@@ -272,6 +290,8 @@ def main():
     parser.add_argument('-D', dest='macros', metavar='MACRO',
                         action='append', help='define macro', default=[])
     options, _ = parser.parse_known_args()
+
+    # generate the header
     if(options.source):
         generate_header()
 
