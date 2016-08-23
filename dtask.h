@@ -170,7 +170,7 @@ typedef group_name##_state_t dref_t;
 #define DTASK_CONFIG(name, parent, id) {(name), (dtask_state_t *)(parent), name##_run, (id)}
 #endif
 
-#define DTASK_STATE(name, parent, id) { .config = DTASK_CONFIG(name, parent, id) }
+#define DTASK_STATE(name, parent, id) {{ .config = DTASK_CONFIG(name, parent, id) }}
 
 /*-------------------- used by generated headers --------------------*/
 

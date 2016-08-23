@@ -15,7 +15,10 @@ factor_tasks_state_t factor_state[2] = {
 };
 simple_tasks_state_t simple_state = DTASK_STATE(simple_tasks, &toplevel_tasks, 0);
 
-int main() {
+int main(int argc, char **argv) {
+
+  (void)argc;
+  (void)argv;
 
   dtask_state_t *state = (dtask_state_t *)&toplevel_state;
 
