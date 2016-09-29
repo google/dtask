@@ -84,6 +84,8 @@ Use `DELAY(type, length)` as a task type to implement a delay.  Then use the fol
 - `DELAY_WRITE(delay, type, len, value)`: writes the value for the current wave
 - `DELAY_FILL(delay, type, len, value)`: fills the delay with a value
 
+The delay must be declared with `DECLARE_DELAY(type, length)`.
+
 See `factor_tasks.c` for an example.
 
 Nesting
