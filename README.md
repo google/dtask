@@ -10,6 +10,8 @@ DTask uses annotations in the source code to calculate task dependencies during 
 
 DTask allows definition of many small modular tasks that will be easier to test, and yet can be inlined for performance.
 
+This is not an official Google product.
+
 Usage
 =====
 
