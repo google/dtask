@@ -38,7 +38,7 @@
 typedef uint8_t dtask_id_t;
 
 // sets of dtask ids
-typedef uint32_t dtask_set_t;
+typedef unsigned int dtask_set_t;
 
 // the maximum id that can fit in dtask_set_t
 #define DTASK_MAX_ID (DTASK_BIT_WIDTH(dtask_set_t) - 1)
@@ -54,7 +54,7 @@ typedef uint32_t dtask_set_t;
 // convert an id to a singleton set (one bit)
 static inline
 dtask_set_t dtask_bit(dtask_id_t id) {
-  return (1U << DTASK_MAX_ID) >> id;
+  return ((dtask_set_t)1 << DTASK_MAX_ID) >> id;
 }
 
 /*-------------------- state and config --------------------*/

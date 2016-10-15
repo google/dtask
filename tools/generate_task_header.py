@@ -21,9 +21,6 @@ import copy
 import subprocess
 import argparse
 
-# number of bits in dtask_set_t
-BITS_IN_DTASK_SET_T = 32
-
 # options read from argparse
 options = None
 
@@ -145,7 +142,7 @@ def show_set(s):
 
 # id to bit set conversion
 def dtask_bit(id):
-    return (1 << (BITS_IN_DTASK_SET_T - 1)) >> id
+    return (1 << (options.bits - 1)) >> id
 
 # generate a function name from the task name
 def func_name(task_name, type, present):
@@ -265,7 +262,7 @@ static dtask_set_t {name}_run(dtask_state_t *state, dtask_set_t initial) {{
         # dispatch code
         for (task, dict) in tasks:
             f.write('''
-    if(({uptask} & scheduled) && __dtask_{task}(state)) {{
+  if(({uptask} & scheduled) && __dtask_{task}(state)) {{
     state->events |= {uptask};'''.format(task=task,
                                          uptask=task.upper()))
             if dict['depnts']:
@@ -303,6 +300,7 @@ def main():
                         action='append', help='include dir', default=[])
     parser.add_argument('-D', dest='macros', metavar='MACRO',
                         action='append', help='define macro', default=[])
+    parser.add_argument('-b', dest='bits', type=int, default=32, help='bit width of dtask_set_t')
     options, _ = parser.parse_known_args()
 
     # generate the header

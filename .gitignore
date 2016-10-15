@@ -1,5 +1,7 @@
 *~
 *.o
 *_tasks.h
-test
 *.pyc
+/examples/test/test
+/examples/pump/pump.elf
+.tramp_history
