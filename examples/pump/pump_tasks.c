@@ -37,9 +37,8 @@ DTASK(button_gpio, bool) {
   return true;
 }
 
-// simple up-counting timer
+// pass through external timer
 DTASK(timer, uint16_t) {
-  (*DREF(timer))++;
   return true;
 }
 

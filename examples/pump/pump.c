@@ -25,6 +25,8 @@ static pump_tasks_state_t state = DTASK_STATE(pump_tasks, 0, 0);
 // bit mask of initial tasks to run (triggered externally e.g. interrupt)
 static dtask_set_t initial = 0;
 
+static uint16_t clock = 0;
+
 // GPIO lines
 #define LED1 0x01
 #define LED2 0x40
@@ -39,6 +41,7 @@ void set(uint8_t x, bool on) {
 __attribute__((interrupt(TIMERA0_VECTOR)))
 void timer_isr() {
   P1IES = (P1IES & ~SWITCH) | (P1IN & SWITCH); // make sure button interrupts on the right edge
+  clock++;
   initial |= TIMER; // mark timer task to run
   LPM0_EXIT; // exit low power mode
 }
@@ -81,19 +84,30 @@ void main() {
 
   for(;;) {
 
-    // external inputs
-    state.button_gpio = !(P1IN & SWITCH);
-
-    // run tasks
-    dtask_run((dtask_state_t *)&state, initial);
-
-    // external outputs
-    set(PUMP_GPIO, state.pump);
-    set(LED2, state.status_led);
-    set(LED1, state.ui_led);
-
-    // reset and wait for interrupt
+    // atomically get the initial set
+    __dint();
+    dtask_set_t run_initial = initial;
     initial = 0;
-    LPM0; // enter low power mode
+    __eint();
+
+    if(run_initial == 0) {
+
+      // enter low power mode
+      LPM0;
+
+    } else {
+
+      // external inputs
+      state.button_gpio = !(P1IN & SWITCH);
+      state.timer = clock;
+
+      // run tasks
+      dtask_run((dtask_state_t *)&state, run_initial);
+
+      // external outputs
+      set(PUMP_GPIO, state.pump);
+      set(LED2, state.status_led);
+      set(LED1, state.ui_led);
+    }
   }
 }
