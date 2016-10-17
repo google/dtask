@@ -96,7 +96,7 @@ enum animation {
 // use button events to adjust the time setting
 DTASK(time_setting, struct {int on_time; uint16_t change_enable_ts; bool change_enabled; int animation;}) {
   time_setting_t *s = DREF(time_setting);
-  uint16_t time = *DREF_WEAK(timer);
+  uint16_t time = *DREF(timer);
   int event = *DREF(button_event);
   bool change = false;
 

@@ -97,3 +97,9 @@ Task groups can be nested by calling `dtask_run()` from a task in another task g
 
 See `toplevel_tasks.c` for an example.
 
+MSP430 Lauchpad Pump Demo
+=========================
+
+Click below for a video of the pump controller demo in operation:
+
+[![Pump Demo Video](https://github.com/google/dtask/blob/master/doc/images/pump-youtube-thumbnail.jpg)](https://youtu.be/qKPn5xx2aHA)
