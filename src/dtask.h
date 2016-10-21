@@ -167,6 +167,9 @@ typedef group_name##_state_t dref_t;
 // weak version of DREF that doesn't force dependency to be enabled
 #define DREF_WEAK(x) DREF(x)
 
+// passive (doesn't trigger) version of DREF that doesn't force dependency to be enabled
+#define DREF_PASS(x) DREF(x)
+
 // define the enable function for a dtask
 #define DTASK_ENABLE(name)  \
   void __dtask_enable_##name(dtask_state_t *state)

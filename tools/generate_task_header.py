@@ -29,7 +29,7 @@ options = None
 # DTASK(name, type)
 dtask_re = re.compile(r'DTASK\(\s*(\w+)\s*,\s*(.+)\s*\)')
 # DGET(name)
-dget_re = re.compile(r'DREF(_WEAK)?\(\s*(\w+)\s*\)')
+dget_re = re.compile(r'DREF(_WEAK|_PASS)?\(\s*(\w+)\s*\)')
 # DTASK_ENABLE(name) | DTASK_DISABLE(name)
 dtask_enable_or_disable_re = re.compile(r'DTASK_(EN|DIS)ABLE\(\s*(\w+)\s*\)')
 # DTASK_GROUP(group_name)
@@ -42,6 +42,7 @@ def init_task(tasks, name):
             'type': 'int',
             'deps': set(),
             'weak_deps': set(),
+            'passive_deps': set(),
             'depnts': set(),
             'all_deps': set(),
             'all_depnts': set(),
@@ -101,16 +102,19 @@ def find_tasks_in_file(filename):
                 if in_dtask:
                     for match in dget_re.finditer(line):
                         if match:
-                            if match.group(1):
+                            if match.group(1) == '_WEAK':
                                 # weak dependency
                                 last_task['weak_deps'].add(match.group(2))
+                            elif match.group(1) == '_PASS':
+                                # passive dependency
+                                last_task['passive_deps'].add(match.group(2))
                             else:
                                 last_task['deps'].add(match.group(2))
     return tasks
 
 # toposort, then calculate dependencies
 def order_tasks(tasks):
-    sorted = toposort_flatten({k: v['deps'] | v['weak_deps']
+    sorted = toposort_flatten({k: v['deps'] | v['weak_deps'] | v['passive_deps']
                                for (k, v) in tasks.iteritems()})
 
     #calculate dependents
