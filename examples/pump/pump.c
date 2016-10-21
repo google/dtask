@@ -50,7 +50,7 @@ __attribute__((interrupt(PORT1_VECTOR)))
 void button_isr() {
   P1IES ^= SWITCH;  // catch the other edge
   P1IFG &= ~SWITCH; // clear the interrupt flag
-  initial |= BUTTON_GPIO; // mark button_gpio task to run
+  initial |= GPIO_BUTTON; // mark button_gpio task to run
   LPM0_EXIT; // exit low power mode
 }
 
@@ -80,7 +80,7 @@ void main() {
   init();
 
   // enable the outputs
-  dtask_enable((dtask_state_t *)&state, PUMP | STATUS_LED | UI_LED);
+  dtask_enable((dtask_state_t *)&state, PUMP | STATUS_LED | UI);
 
   for(;;) {
 
@@ -98,7 +98,7 @@ void main() {
     } else {
 
       // external inputs
-      state.button_gpio = !(P1IN & SWITCH);
+      state.gpio_button = !(P1IN & SWITCH);
       state.timer = clock;
 
       // run tasks
@@ -107,7 +107,7 @@ void main() {
       // external outputs
       set(PUMP_GPIO, state.pump);
       set(LED2, state.status_led);
-      set(LED1, state.ui_led);
+      set(LED1, state.ui.led);
     }
   }
 }

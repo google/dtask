@@ -33,7 +33,7 @@ enum button_event {
 };
 
 // pass though external button GPIO state
-DTASK(button_gpio, bool) {
+DTASK(gpio_button, bool) {
   return true;
 }
 
@@ -43,22 +43,19 @@ DTASK(timer, uint16_t) {
 }
 
 // converts raw GPIO to button events
-DTASK(button_event, int) {
-
-  // internal state
-  static uint16_t press_time = 0;
+DTASK(button, struct { int event; uint16_t press_time; } ) {
 
   // dependencies
-  bool gpio = *DREF(button_gpio);
+  bool gpio = *DREF(gpio_button);
   uint16_t time = *DREF(timer);
-  int event = *DREF(button_event);
+  int event = DREF(button)->event;
 
   // on GPIO change
-  if(DTASK_AND(BUTTON_GPIO)) {
+  if(DTASK_AND(GPIO_BUTTON)) {
     // button presses are rate limited
-    if(gpio && time - press_time > BUTTON_RESET_TIME) {
+    if(gpio && time - DREF(button)->press_time > BUTTON_RESET_TIME) {
       event = BTN_PRESS;
-      press_time = time;
+      DREF(button)->press_time = time;
     } else if(!gpio) {
       if(event == BTN_LONG_PRESS) {
         event = BTN_LONG_RELEASE;
@@ -71,14 +68,14 @@ DTASK(button_event, int) {
   // promote press to a long press
   if(gpio &&
      event == BTN_PRESS &&
-     time - press_time > LONG_PRESS_TIME) {
+     time - DREF(button)->press_time > LONG_PRESS_TIME) {
     event = BTN_LONG_PRESS;
   }
 
-  if(event == *DREF(button_event)) {
+  if(event == DREF(button)->event) {
     return false;
   } else {
-    *DREF(button_event) = event;
+    DREF(button)->event = event;
     return true;
   }
 }
@@ -96,14 +93,14 @@ enum animation {
 DTASK(time_setting, struct {int on_time; uint16_t change_enable_ts; bool change_enabled; int animation;}) {
   time_setting_t *s = DREF(time_setting);
   uint16_t time = *DREF(timer);
-  int event = *DREF(button_event);
+  int event = DREF(button)->event;
   bool change = false;
 
   // default animation
   s->animation = ANIM_NONE;
 
   // on button event
-  if(DTASK_AND(BUTTON_EVENT)) {
+  if(DTASK_AND(BUTTON)) {
     if(event == BTN_LONG_PRESS) {
       // enable changes to settings with a long press
       s->change_enable_ts = time;
@@ -163,41 +160,38 @@ DTASK(status_led, bool) {
 }
 
 // UI led, used to read and change the time setting
-DTASK(ui_led, bool) {
-  static uint16_t start = 0;
-  static int anim = ANIM_NONE;
-
+DTASK(ui, struct { bool led; uint16_t start; int anim; } ) {
   time_setting_t *s = DREF(time_setting);
   uint16_t time = *DREF(timer);
 
   if(DTASK_AND(TIME_SETTING)) {
     // start animation indicated from time_setting
-    start = time;
-    anim = s->animation;
+    DREF(ui)->start = time;
+    DREF(ui)->anim = s->animation;
   }
 
-  uint16_t t = time - start;
+  uint16_t t = time - DREF(ui)->start;
 
   // reset animation after maximum length
-  if(t > MAX_ANIM) anim = ANIM_NONE;
+  if(t > MAX_ANIM) DREF(ui)->anim = ANIM_NONE;
 
-  switch(anim) {
+  switch(DREF(ui)->anim) {
   case ANIM_NONE:
     // off
-    *DREF(ui_led) = false;
+    DREF(ui)->led = false;
     break;
   case ANIM_START:
     // single long blink
-    *DREF(ui_led) = t < 16;
+    DREF(ui)->led = t < 16;
     break;
   case ANIM_CHANGE:
   case ANIM_READ:
     // blink back time setting slowly
-    *DREF(ui_led) = ((t & 4) != 0) && (t >> 3 <= s->on_time);
+    DREF(ui)->led = ((t & 4) != 0) && (t >> 3 <= s->on_time);
     break;
   case ANIM_END:
     // quick flashes
-    *DREF(ui_led) = ((t & 1) != 0) && (t < 8);
+    DREF(ui)->led = ((t & 1) != 0) && (t < 8);
     break;
   default:
     break;
