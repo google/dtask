@@ -27,7 +27,7 @@ pump.elf: $(OBJS)
 
 $(DTASK_GENERATED_HEADERS): $(BUILD_DIR)/%.h : $(SRC)
 	@mkdir -p $(BUILD_DIR)
-	PYTHONPATH=$(DTASK_ROOT) python $(DTASK_TOOLS)/generate_task_header.py -I $(DTASK_SRC) -I $(MCU_INCLUDE) -b 16 --target $* $(SRC)
+	PYTHONPATH=$(DTASK_ROOT) python2 $(DTASK_TOOLS)/generate_task_header.py -I $(DTASK_SRC) -I $(MCU_INCLUDE) -b 16 --target $* $(SRC)
 	mv $*.h $(BUILD_DIR)
 
 $(BUILD_DIR)/%.o: %.c $(HEADERS)
